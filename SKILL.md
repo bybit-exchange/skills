@@ -98,6 +98,7 @@ On first use:
 **Display rules** (never show full credentials):
 - API Key: show first 5 + last 4 characters (e.g., `AbCdE...x1y2`)
 - Secret Key: show last 5 only (e.g., `***...vWxYz`)
+- Code blocks: NEVER include raw API Key or Secret Key values in generated code, scripts, or curl examples. Use placeholder variables like `${API_KEY}` and `${SECRET_KEY}` instead of actual values. This applies to ALL output formats including bash, python, and JSON.
 
 ### Step 3: Verify Connection (auto-run on first use)
 
