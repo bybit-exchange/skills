@@ -20,10 +20,10 @@ This skill supports self-update. At the start of each new session, run this chec
 
 ```
 1. LOCAL_VERSION = "1.0.0"  (from metadata above)
-2. curl -sf https://raw.githubusercontent.com/JohnnyWic/bybit-skills-hub/main/VERSION
+2. curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/VERSION
 3. If remote version > LOCAL_VERSION:
    a. Tell user: "Bybit Skill has a new version (LOCAL → REMOTE). Updating..."
-   b. Download: curl -sf https://raw.githubusercontent.com/JohnnyWic/bybit-skills-hub/main/SKILL.md -o <current_skill_path>
+   b. Download: curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/VERSION -o <current_skill_path>
    c. Tell user: "Updated to vREMOTE. Please restart session to use the new version."
 4. If remote version == LOCAL_VERSION or fetch fails: silently continue, do not mention to user.
 ```
@@ -122,7 +122,7 @@ Tell the user what they can do. Examples:
 ```
 1. Identify which module(s) the user's request needs from the table below
 2. If the module has NOT been loaded in this session:
-   curl -sf https://raw.githubusercontent.com/JohnnyWic/bybit-skills-hub/main/modules/<module>.md
+   curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
 3. Read the fetched content and use it for the current and all future requests in that category
 4. If fetch fails: use the Quick Reference fallback below, or inform the user
 ```
@@ -146,8 +146,8 @@ Tell the user what they can do. Examples:
 3. **Fail gracefully**: If a module fetch fails, use the Quick Reference below as fallback. **CRITICAL: In fallback mode, only read-only operations (GET) are allowed. Do NOT execute write operations (POST) without the full module loaded.**
 4. **Multiple modules OK**: Load as many modules as needed for the user's request
 5. **Multi-source fallback**: If GitHub Raw fails, try these alternatives in order:
-   - `https://cdn.jsdelivr.net/gh/JohnnyWic/bybit-skills-hub@main/modules/<module>.md`
-   - `https://raw.githubusercontent.com/JohnnyWic/bybit-skills-hub/main/modules/<module>.md` (retry once)
+   - `https://cdn.jsdelivr.net/gh/bybit-exchange/skills@main/modules/<module>.md`
+   - `https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md` (retry once)
 
 ---
 
