@@ -38,20 +38,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 ## Crypto Loan
 
-### Crypto Loan (legacy — prefer `crypto-loan-common` / `crypto-loan-fixed` / `crypto-loan-flexible` below)
-
 | Endpoint | Path | Method | Required Params | Optional Params | Auth | Status |
 |----------|------|--------|----------------|-----------------|------|--------|
-| ~~Loanable Coins~~ | `/v5/crypto-loan/loan-coin` | GET | — | coin | No | **Deprecated** |
-| ~~Collateral Coins~~ | `/v5/crypto-loan/collateral-coin` | GET | — | coin | No | **Deprecated** |
-| ~~Flexible Borrow~~ | `/v5/crypto-loan/flexible/borrow` | POST | loanCoin | loanAmount, collateralCoin, collateralAmount | Yes | **Deprecated** |
-| ~~Flexible Repay~~ | `/v5/crypto-loan/flexible/repay` | POST | orderId, amount | — | Yes | **Deprecated** |
-| ~~Flexible Ongoing~~ | `/v5/crypto-loan/flexible/ongoing-orders` | GET | — | orderId, loanCoin, collateralCoin, limit, cursor | Yes | **Deprecated** |
-| ~~Adjust Collateral~~ | `/v5/crypto-loan/adjust-collateral` | POST | orderId, amount, direction | — | Yes | **Deprecated** |
-| ~~Fixed Borrow~~ | `/v5/crypto-loan/fixed/borrow` | POST | loanCoin, loanAmount, collateralCoin, termId | — | Yes | **Deprecated** |
-| ~~Fixed Repay~~ | `/v5/crypto-loan/fixed/repay` | POST | orderId, amount | — | Yes | **Deprecated** |
-| ~~Max Loan Amount~~ | `/v5/crypto-loan/max-loan-amount` | GET | loanCoin, collateralCoin | collateralAmount, loanAmount | Yes | **Deprecated** |
-| ~~LTV Adjust History~~ | `/v5/crypto-loan/ltv-adjust-history` | GET | — | orderId, startTime, endTime, limit, cursor | Yes | **Deprecated** |
 | Repay | `/v5/crypto-loan/repay` | POST | orderId, repayAmount | — | Yes | Current |
 | Adjust LTV | `/v5/crypto-loan/adjust-ltv` | POST | currency, amount, direction | — | Yes | Current |
 | Ongoing Orders | `/v5/crypto-loan/ongoing-orders` | GET | — | orderId, limit, cursor | Yes | Current |
@@ -175,19 +163,6 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Execute Trade | `/v5/fiat/trade-execute` | POST | quoteTxId, subUserId | webhookUrl, MerchantRequestId |
 | Trade Status | `/v5/fiat/trade-query` | GET | — | tradeNo, merchantRequestId |
 | Trade History | `/v5/fiat/query-trade-history` | GET | — | — |
-
----
-
-## Lending (Deprecated — use Earn v2 endpoints in `modules/earn.md`)
-
-| Endpoint | Path | Method | Required Params | Optional Params | Status |
-|----------|------|--------|----------------|-----------------|--------|
-| ~~Lending Coin Info~~ | `/v5/lending/info` | GET | — | coin | **Deprecated** |
-| ~~Lending Account~~ | `/v5/lending/account` | GET | coin | — | **Deprecated** |
-| ~~Deposit~~ | `/v5/lending/purchase` | POST | coin, quantity | serialNo | **Deprecated** |
-| ~~Redeem~~ | `/v5/lending/redeem` | POST | coin, quantity | serialNo | **Deprecated** |
-| ~~Cancel Redeem~~ | `/v5/lending/redeem-cancel` | POST | orderId | — | **Deprecated** |
-| ~~Order History~~ | `/v5/lending/history-order` | GET | — | coin, orderId, startTime, endTime, limit, orderType | **Deprecated** |
 
 ---
 

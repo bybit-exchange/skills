@@ -127,9 +127,7 @@ POST /v5/position/trading-stop
 |----------|------|--------|----------------|-----------------|------------|
 | Get Position | `/v5/position/list` | GET | category | symbol, baseCoin, settleCoin, limit, cursor | linear, inverse, option |
 | Set Leverage | `/v5/position/set-leverage` | POST | category, symbol, buyLeverage, sellLeverage | — | linear, inverse |
-| ~~Switch Isolated/Cross~~ | `/v5/position/switch-isolated` | POST | category, symbol, tradeMode, buyLeverage, sellLeverage | — | **Deprecated → use `/v5/account/set-margin-mode`** |
 | Switch Position Mode | `/v5/position/switch-mode` | POST | category, mode | coin, symbol | linear, inverse |
-| ~~Set Risk Limit~~ | `/v5/position/set-risk-limit` | POST | category, symbol, riskId | — | **Deprecated (UTA auto-manages risk limit)** |
 | Set Trading Stop | `/v5/position/trading-stop` | POST | category, symbol, tpslMode, positionIdx | takeProfit, stopLoss, trailingStop, tpTriggerBy, slTriggerBy, activePrice, tpSize, slSize, tpLimitPrice, slLimitPrice | linear, inverse |
 | Set Auto Add Margin | `/v5/position/set-auto-add-margin` | POST | category, symbol, autoAddMargin | positionIdx | linear, inverse |
 | Add/Reduce Margin | `/v5/position/add-margin` | POST | category, symbol, margin | positionIdx | linear, inverse |

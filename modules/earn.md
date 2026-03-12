@@ -13,25 +13,25 @@ GET /v5/earn/product?category=FlexibleSaving&coin=USDT
 
 **Subscribe**
 ```
-POST /v5/earn/create-order
-{"productId":"xxx","amount":"1000","orderType":"Subscribe","accountType":"UNIFIED"}
+POST /v5/earn/place-order
+{"category":"FlexibleSaving","coin":"USDT","amount":"1000"}
 ```
-> Get `productId` from the product response.
+> Get available products from the product list first to confirm coin and category.
 
-**View holdings**
+**View orders**
 ```
-GET /v5/earn/position?coin=USDT
+GET /v5/earn/order?category=FlexibleSaving
 ```
 
 **View yield history**
 ```
-GET /v5/earn/yield-history?coin=USDT
+GET /v5/earn/yield?category=FlexibleSaving&coin=USDT
 ```
 
 **Redeem**
 ```
-POST /v5/earn/create-order
-{"productId":"xxx","amount":"500","orderType":"Redeem","accountType":"UNIFIED"}
+POST /v5/earn/place-order
+{"category":"FlexibleSaving","coin":"USDT","amount":"500"}
 ```
 
 ---
@@ -42,11 +42,6 @@ POST /v5/earn/create-order
 
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
 |----------|------|--------|----------------|-----------------|------------|
-| ~~Product Info~~ | `/v5/earn/product-info` | GET | — | category, coin | **Deprecated → use v2** |
-| ~~Subscribe/Redeem~~ | `/v5/earn/create-order` | POST | productId, amount, orderType | serialNo, accountType | **Deprecated → use v2** |
-| ~~Position~~ | `/v5/earn/position` | GET | — | productId, coin, category | **Deprecated → use v2** |
-| ~~Order History~~ | `/v5/earn/order-history` | GET | — | productId, orderId, startTime, endTime, limit, cursor | **Deprecated → use v2** |
-| ~~Yield History~~ | `/v5/earn/yield-history` | GET | — | productId, coin, startTime, endTime, limit, cursor | **Deprecated → use v2** |
 | Product v2 | `/v5/earn/product` | GET | category | coin | **Recommended** |
 | Place Order v2 | `/v5/earn/place-order` | POST | category, coin, amount | orderLinkId | **Recommended** |
 | Query Order v2 | `/v5/earn/order` | GET | category | orderId, orderLinkId, productId, startTime, endTime, limit, cursor | **Recommended** |

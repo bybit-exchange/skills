@@ -67,11 +67,6 @@ POST /v5/order/cancel
 | VIP Margin Data | `/v5/spot-margin-trade/data` | GET | — | — | spot |
 | Interest Rate History | `/v5/spot-margin-trade/interest-rate-history` | GET | currency | startTime, endTime, vipLevel | spot |
 | Margin Status | `/v5/spot-margin-trade/state` | GET | — | — | spot |
-| ~~Cross Margin Loan Info~~ | `/v5/spot-cross-margin-trade/loan-info` | GET | — | coin | **Deprecated (pre-UTA)** |
-| ~~Cross Margin Account~~ | `/v5/spot-cross-margin-trade/account` | GET | — | — | **Deprecated (pre-UTA)** |
-| ~~Borrow~~ | `/v5/spot-cross-margin-trade/loan` | POST | coin, qty | — | **Deprecated → `/v5/account/borrow`** |
-| ~~Repay~~ | `/v5/spot-cross-margin-trade/repay` | POST | coin, qty | — | **Deprecated → `/v5/account/repay`** |
-| ~~Cross Margin Switch~~ | `/v5/spot-cross-margin-trade/switch` | POST | switch | — | **Deprecated (pre-UTA)** |
 | Coin Status | `/v5/spot-margin-trade/coinstate` | GET | — | currency | spot |
 | Tiered Collateral Rate | `/v5/spot-margin-trade/collateral` | GET | — | currency | spot |
 | Auto Repay Mode | `/v5/spot-margin-trade/get-auto-repay-mode` | GET | — | — | spot |
