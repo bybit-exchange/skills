@@ -2,7 +2,7 @@
 
 Trade on Bybit using natural language. Tell any AI assistant one sentence, and it can execute trades, check markets, manage positions, and more — zero installation required.
 
-**Version:** 1.0.0 | **License:** MIT
+**Version:** 1.0.1 | **License:** MIT
 
 ## How It Works
 
@@ -91,7 +91,3 @@ The skill includes a self-update mechanism. At session start, it checks the `VER
 ## License
 
 [MIT](LICENSE)
-
-## Contact
-
-If you have any feedback, questions, or suggestions, please contact: ai_agent@bybit.com

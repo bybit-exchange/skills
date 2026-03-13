@@ -12,19 +12,25 @@ User might say: "Open a BTC long with 10x leverage", "Close position", "Set take
 GET /v5/account/info
 # Returns marginMode: REGULAR_MARGIN / ISOLATED_MARGIN / PORTFOLIO_MARGIN
 
-# 2. Detect position mode (MUST do before any write operation)
+# 2. Check position mode (MUST do before any write operation)
+GET /v5/position/list?category=linear&symbol=BTCUSDT
+# Response positionIdx: 0 → one-way mode, 1 or 2 → hedge mode
+# One-way: use positionIdx=0 for all orders
+# Hedge: use positionIdx=1 (Buy/Long), positionIdx=2 (Sell/Short)
+
+# 2b. (Optional) Switch position mode — only if user explicitly requests
 POST /v5/position/switch-mode
-{"category":"linear","coin":"USDT","mode":0}
-# If retCode=0 → was in hedge mode, now switched to one-way (positionIdx=0)
-# If retCode=110025 "Position mode is not modified" → already one-way (positionIdx=0)
-# If you want to KEEP hedge mode, skip this call and use positionIdx=1 (long) / 2 (short)
+{"category":"linear","coin":"USDT","mode":0}   # 0=one-way, 3=hedge
+# retCode=0 → switched successfully
+# retCode=110025 → already in target mode
+# retCode=110026 → cannot switch while holding positions or active orders
 
 # 3. Set leverage (buy and sell leverage must match)
 POST /v5/position/set-leverage
 {"category":"linear","symbol":"BTCUSDT","buyLeverage":"10","sellLeverage":"10"}
 ```
 
-> **Position mode detection**: Always detect position mode before placing the first order in a session. Cache the result (one-way vs hedge) and use the correct `positionIdx` for all subsequent orders. One-way mode: `positionIdx=0`. Hedge mode: `positionIdx=1` (long), `positionIdx=2` (short).
+> **Position mode check**: Always query position mode via `/v5/position/list` before placing the first order in a session. Cache the result (one-way vs hedge) and use the correct `positionIdx` for all subsequent orders. One-way mode: `positionIdx=0`. Hedge mode: `positionIdx=1` (long), `positionIdx=2` (short). Never call switch-mode to "detect" — it changes state.
 
 **Open long**
 ```

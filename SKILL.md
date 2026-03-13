@@ -2,7 +2,7 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.0.0
+  version: 1.0.1
   author: Bybit
   updated: 2026-03-10
 license: MIT
@@ -12,14 +12,14 @@ license: MIT
 
 Trade on Bybit using natural language. Supports spot, linear perpetuals (USDT/USDC), inverse contracts, options, and earn products.
 
-**Version:** 1.0.0 | **Updated:** 2026-03-10 | **Architecture:** Modular (on-demand loading)
+**Version:** 1.0.1 | **Updated:** 2026-03-10 | **Architecture:** Modular (on-demand loading)
 
 ### Auto Update (MUST follow at session start)
 
 This skill supports self-update. At the start of each new session, run this check **once**:
 
 ```
-1. LOCAL_VERSION = "1.0.0"  (from metadata above)
+1. LOCAL_VERSION = "1.0.1"  (from metadata above)
 2. curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/VERSION
 3. If remote version > LOCAL_VERSION:
    a. Tell user: "Bybit Skill has a new version (LOCAL → REMOTE). Updating..."
@@ -284,7 +284,7 @@ If module loading fails, these core endpoints can be used directly with curl:
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.0.0` |
+| `User-Agent` | `bybit-skill/1.0.1` |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
@@ -316,7 +316,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.0.0" \
+  -H "User-Agent: bybit-skill/1.0.1" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -332,7 +332,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.0.0" \
+  -H "User-Agent: bybit-skill/1.0.1" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
