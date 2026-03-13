@@ -75,16 +75,6 @@ POST /v5/order/cancel
 | Position Tiers | `/v5/spot-margin-trade/position-tiers` | GET | — | — | spot |
 | Repayable Amount | `/v5/spot-margin-trade/repayment-available-amount` | GET | — | — | spot |
 
-### Leverage Token
-
-| Endpoint | Path | Method | Required Params | Optional Params | Auth | Categories |
-|----------|------|--------|----------------|-----------------|------|------------|
-| LT Info | `/v5/spot-lever-token/info` | GET | — | ltCoin | No | spot |
-| LT Tickers | `/v5/spot-lever-token/reference` | GET | ltCoin | — | No | spot |
-| Purchase | `/v5/spot-lever-token/purchase` | POST | ltCoin, ltAmount | serialNo | Yes | spot |
-| Redeem | `/v5/spot-lever-token/redeem` | POST | ltCoin, ltAmount | serialNo | Yes | spot |
-| Order Record | `/v5/spot-lever-token/order-record` | GET | — | ltCoin, orderId, startTime, endTime, limit, ltOrderType, serialNo | Yes | spot |
-
 ## Enums
 
 * **side**: `Buy` | `Sell`

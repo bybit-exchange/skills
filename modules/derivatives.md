@@ -131,8 +131,6 @@ POST /v5/position/trading-stop
 | Set Trading Stop | `/v5/position/trading-stop` | POST | category, symbol, tpslMode, positionIdx | takeProfit, stopLoss, trailingStop, tpTriggerBy, slTriggerBy, activePrice, tpSize, slSize, tpLimitPrice, slLimitPrice | linear, inverse |
 | Set Auto Add Margin | `/v5/position/set-auto-add-margin` | POST | category, symbol, autoAddMargin | positionIdx | linear, inverse |
 | Add/Reduce Margin | `/v5/position/add-margin` | POST | category, symbol, margin | positionIdx | linear, inverse |
-| Move Position | `/v5/position/move-positions` | POST | fromUid, toUid, list[] | — | linear, inverse |
-| Move Position History | `/v5/position/move-history` | GET | — | category, symbol, startTime, endTime, status, limit, cursor | linear, inverse |
 | Execution History | `/v5/execution/list` | GET | category | symbol, baseCoin, orderId, startTime, endTime, execType, limit, cursor | spot, linear, inverse, option |
 | Closed PnL | `/v5/position/closed-pnl` | GET | category, symbol | startTime, endTime, limit, cursor | linear, inverse |
 | Closed Options | `/v5/position/get-closed-positions` | GET | category | symbol, limit, cursor | option |

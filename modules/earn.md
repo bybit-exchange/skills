@@ -10,13 +10,14 @@ User might say: "Show me available earn products", "Deposit USDT", "Redeem"
 ```
 GET /v5/earn/product?category=FlexibleSaving&coin=USDT
 ```
+> Use the returned `productId` for place-order requests.
 
-**Subscribe**
+**Stake**
 ```
 POST /v5/earn/place-order
-{"category":"FlexibleSaving","coin":"USDT","amount":"1000"}
+{"category":"FlexibleSaving","orderType":"Stake","accountType":"UNIFIED","coin":"USDT","amount":"1000","productId":"123","orderLinkId":"unique-id-123"}
 ```
-> Get available products from the product list first to confirm coin and category.
+> All 7 params above are required. Get `productId` from the product list first.
 
 **View orders**
 ```
@@ -31,7 +32,7 @@ GET /v5/earn/yield?category=FlexibleSaving&coin=USDT
 **Redeem**
 ```
 POST /v5/earn/place-order
-{"category":"FlexibleSaving","coin":"USDT","amount":"500"}
+{"category":"FlexibleSaving","orderType":"Redeem","accountType":"UNIFIED","coin":"USDT","amount":"500","productId":"123","orderLinkId":"unique-id-456"}
 ```
 
 ---
@@ -40,15 +41,17 @@ POST /v5/earn/place-order
 
 ### Earn (authentication required)
 
-| Endpoint | Path | Method | Required Params | Optional Params | Categories |
-|----------|------|--------|----------------|-----------------|------------|
-| Product v2 | `/v5/earn/product` | GET | category | coin | **Recommended** |
-| Place Order v2 | `/v5/earn/place-order` | POST | category, coin, amount | orderLinkId | **Recommended** |
-| Query Order v2 | `/v5/earn/order` | GET | category | orderId, orderLinkId, productId, startTime, endTime, limit, cursor | **Recommended** |
-| Yield v2 | `/v5/earn/yield` | GET | category | productId, startTime, endTime, limit, cursor | **Recommended** |
-| Hourly Yield | `/v5/earn/hourly-yield` | GET | category | productId, startTime, endTime, limit, cursor | **Recommended** |
+| Endpoint | Path | Method | Required Params | Optional Params |
+|----------|------|--------|----------------|-----------------|
+| Product | `/v5/earn/product` | GET | category | coin |
+| Place Order | `/v5/earn/place-order` | POST | category, orderType, accountType, coin, amount, productId, orderLinkId | redeemPositionId, toAccountType |
+| Query Order | `/v5/earn/order` | GET | category | orderId, orderLinkId, productId, startTime, endTime, limit, cursor |
+| Position | `/v5/earn/position` | GET | category | productId, coin |
+| Yield | `/v5/earn/yield` | GET | category | productId, startTime, endTime, limit, cursor |
+| Hourly Yield | `/v5/earn/hourly-yield` | GET | category | productId, startTime, endTime, limit, cursor |
 
 ## Enums
 
-* **earnOrderType**: `Subscribe` | `Redeem` (Note: older docs may reference `Stake`; use `Subscribe` for V2 Earn API)
-* **earn category**: `FlexibleSaving` | `FixedDeposit` | `Launchpool` | etc.
+* **orderType**: `Stake` | `Redeem`
+* **accountType**: `FUND` | `UNIFIED` (OnChain only supports FUND)
+* **earn category**: `FlexibleSaving` | `OnChain`

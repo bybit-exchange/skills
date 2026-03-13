@@ -43,7 +43,6 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Wallet Balance | `/v5/account/wallet-balance` | GET | accountType | coin | — |
 | Asset Overview | `/v5/asset/asset-overview` | GET | — | accountType, coin | — |
 | Account Info | `/v5/account/info` | GET | — | — | — |
-| Upgrade to UTA | `/v5/account/upgrade-to-uta` | POST | — | — | — |
 | Borrow History | `/v5/account/borrow-history` | GET | — | currency, startTime, endTime, limit, cursor | — |
 | Set Collateral | `/v5/account/set-collateral-switch` | POST | coin, collateralSwitch | — | — |
 | Collateral Info | `/v5/account/collateral-info` | GET | — | currency | — |
@@ -85,8 +84,6 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Transferable Coins | `/v5/asset/transfer/query-transfer-coin-list` | GET | fromAccountType, toAccountType | — | — |
 | Internal Transfer | `/v5/asset/transfer/inter-transfer` | POST | transferId, coin, amount, fromAccountType, toAccountType | — | — |
 | Sub-account List | `/v5/asset/transfer/query-sub-member-list` | GET | — | — | — |
-| Universal Transfer | `/v5/asset/transfer/universal-transfer` | POST | transferId, coin, amount, fromMemberId, toMemberId, fromAccountType, toAccountType | — | — |
-| Universal Transfer Record | `/v5/asset/transfer/query-universal-transfer-list` | GET | — | transferId, coin, status, startTime, endTime, limit, cursor | — |
 | Deposit Coins | `/v5/asset/deposit/query-allowed-list` | GET | — | coin, chain, cursor, limit | — |
 | Set Deposit Account | `/v5/asset/deposit/deposit-to-account` | POST | accountType | — | — |
 | Deposit Record | `/v5/asset/deposit/query-record` | GET | — | coin, startTime, endTime, limit, cursor | — |
@@ -97,8 +94,6 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Coin Info | `/v5/asset/coin/query-info` | GET | — | coin | — |
 | Withdrawal Record | `/v5/asset/withdraw/query-record` | GET | — | withdrawID, coin, withdrawType, startTime, endTime, limit, cursor | — |
 | Withdrawable Amount | `/v5/asset/withdraw/withdrawable-amount` | GET | coin | — | — |
-| Withdraw | `/v5/asset/withdraw/create` | POST | coin, chain, address, tag, amount, timestamp, forceChain, accountType | — | — |
-| Cancel Withdrawal | `/v5/asset/withdraw/cancel` | POST | id | — | — |
 | Withdrawal Address List | `/v5/asset/withdraw/query-address` | GET | — | coin, chain, addressType, limit, cursor | — |
 | VASP List | `/v5/asset/withdraw/vasp/list` | GET | — | — | — |
 | Internal Transfer Record v2 | `/v5/asset/transfer/inter-transfer-list-query` | GET | — | coin, limit | — |
@@ -111,28 +106,24 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Exchange Execute | `/v5/asset/exchange/convert-execute` | POST | quoteTxId | — | — |
 | Exchange Result | `/v5/asset/exchange/convert-result-query` | GET | quoteTxId, accountType | — | — |
 | Exchange History | `/v5/asset/exchange/query-convert-history` | GET | — | accountType, index, limit | — |
+| Exchange Convert Limit | `/v5/asset/exchange/query-convert-limit` | GET | fromCoin, toCoin, accountType | — | — |
+| Exchange Order List | `/v5/asset/exchange/query-order-list` | GET | accountType | index, limit | — |
 
 ### User (authentication required)
 
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
 |----------|------|--------|----------------|-----------------|------------|
-| Create Sub-account | `/v5/user/create-sub-member` | POST | username, memberType | switch, isUta, note | — |
-| Create Sub-account API Key | `/v5/user/create-sub-api` | POST | subuid, readOnly, permissions | note, ips | — |
 | Sub-account List | `/v5/user/query-sub-members` | GET | — | — | — |
-| Freeze/Unfreeze Sub-account | `/v5/user/frozen-sub-member` | POST | subuid, frozen | — | — |
 | API Key Info | `/v5/user/query-api` | GET | — | — | — |
 | Member Type | `/v5/user/get-member-type` | GET | — | — | — |
-| Modify Master API Key | `/v5/user/update-api` | POST | — | readOnly, ips, permissions | — |
-| Modify Sub API Key | `/v5/user/update-sub-api` | POST | apikey | readOnly, ips, permissions | — |
-| Delete Master API Key | `/v5/user/delete-api` | POST | — | — | — |
-| Delete Sub API Key | `/v5/user/delete-sub-api` | POST | apikey | — | — |
 | Affiliate User Info | `/v5/user/aff-customer-info` | GET | uid | — | — |
 | Sub-account List (full) | `/v5/user/submembers` | GET | — | pageSize, nextCursor | — |
 | Sub-account All Keys | `/v5/user/sub-apikeys` | GET | subMemberId | limit, cursor | — |
 | Escrow Sub-accounts | `/v5/user/escrow_sub_members` | GET | — | pageSize, nextCursor | — |
-| Delete Sub-account | `/v5/user/del-submember` | POST | subMemberId | — | — |
 | Create Demo Account | `/v5/user/create-demo-member` | POST | — | — | — |
 | Affiliate User List | `/v5/affiliate/aff-user-list` | GET | — | size, cursor, need365, need30, needDeposit, startDate, endDate | — |
+| Referral List | `/v5/user/invitation/referrals` | GET | — | limit, cursor | — |
+| Sign Agreement | `/v5/user/agreement` | POST | agree, category | — | — |
 
 ## Enums
 

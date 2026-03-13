@@ -69,7 +69,6 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 |----------|------|--------|----------------|-----------------|
 | Borrow Contract Info | `/v5/crypto-loan-fixed/borrow-contract-info` | GET | orderCurrency | — |
 | Borrow Order Quote | `/v5/crypto-loan-fixed/borrow-order-quote` | GET | orderCurrency | orderBy |
-| Borrow | `/v5/crypto-loan-fixed/borrow` | POST | orderCurrency, loanAmount, collateralCoin, termId | — |
 | Borrow Order Info | `/v5/crypto-loan-fixed/borrow-order-info` | GET | — | orderId |
 | Cancel Borrow | `/v5/crypto-loan-fixed/borrow-order-cancel` | POST | orderId | — |
 | Full Repay | `/v5/crypto-loan-fixed/fully-repay` | POST | orderId | — |
@@ -79,7 +78,6 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Renew | `/v5/crypto-loan-fixed/renew` | POST | orderId | — |
 | Supply Contract Info | `/v5/crypto-loan-fixed/supply-contract-info` | GET | supplyCurrency | — |
 | Supply Order Quote | `/v5/crypto-loan-fixed/supply-order-quote` | GET | orderCurrency | orderBy |
-| Supply | `/v5/crypto-loan-fixed/supply` | POST | supplyCurrency, supplyAmount, termId | — |
 | Supply Order Info | `/v5/crypto-loan-fixed/supply-order-info` | GET | — | orderId |
 | Cancel Supply | `/v5/crypto-loan-fixed/supply-order-cancel` | POST | orderId | — |
 
@@ -87,7 +85,6 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 | Endpoint | Path | Method | Required Params | Optional Params |
 |----------|------|--------|----------------|-----------------|
-| Borrow | `/v5/crypto-loan-flexible/borrow` | POST | loanCoin, loanAmount | — |
 | Repay | `/v5/crypto-loan-flexible/repay` | POST | loanCoin, repayAmount | — |
 | Repay Collateral | `/v5/crypto-loan-flexible/repay-collateral` | POST | orderId | — |
 | Ongoing Coins | `/v5/crypto-loan-flexible/ongoing-coin` | GET | — | loanCurrency |
@@ -107,7 +104,6 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | LTV Conversion | `/v5/ins-loan/ltv-convert` | GET | — | — |
 | Margin Coin Info | `/v5/ins-loan/ensure-tokens` | GET | — | productId |
 | LTV | `/v5/ins-loan/ltv` | GET | — | — |
-| Bind/Unbind UID | `/v5/ins-loan/association-uid` | POST | uid, operate | — |
 | Repay | `/v5/ins-loan/repay-loan` | POST | — | — |
 
 ---
@@ -152,44 +148,19 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 ---
 
-## Fiat (authentication required)
-
-| Endpoint | Path | Method | Required Params | Optional Params |
-|----------|------|--------|----------------|-----------------|
-| Balance | `/v5/fiat/balance-query` | GET | — | currency |
-| Trading Pair List | `/v5/fiat/query-coin-list` | GET | — | side |
-| Reference Price | `/v5/fiat/reference-price` | GET | symbol | — |
-| Request Quote | `/v5/fiat/quote-apply` | POST | fromCoin, fromCoinType, toCoin, toCoinType, requestAmount | requestCoinType |
-| Execute Trade | `/v5/fiat/trade-execute` | POST | quoteTxId, subUserId | webhookUrl, MerchantRequestId |
-| Trade Status | `/v5/fiat/trade-query` | GET | — | tradeNo, merchantRequestId |
-| Trade History | `/v5/fiat/query-trade-history` | GET | — | — |
-
----
-
 ## Broker (authentication required)
 
 | Endpoint | Path | Method | Required Params | Optional Params |
 |----------|------|--------|----------------|-----------------|
 | Earnings Info | `/v5/broker/earnings-info` | GET | — | bizType, startTime, endTime, limit, cursor |
 | Account Info | `/v5/broker/account-info` | GET | — | — |
-| Sub-account Deposit Record | `/v5/broker/asset/query-sub-member-deposit-record` | GET | — | subMemberId, coin, startTime, endTime, limit, cursor |
 | Voucher Info | `/v5/broker/award/info` | GET | awardId | — |
-| Distribute Voucher | `/v5/broker/award/distribute-award` | POST | uid, awardId, amount, specCode | — |
 | Distribution Record | `/v5/broker/award/distribution-record` | GET | — | awardId, startTime, endTime, limit, cursor |
 | All Rate Limits | `/v5/broker/apilimit/query-all` | GET | — | limit, cursor, uids |
 | Rate Limit Cap | `/v5/broker/apilimit/query-cap` | GET | — | — |
 | Set Rate Limit | `/v5/broker/apilimit/set` | POST | list | — |
 
 ---
-
-## API Rate Limit (authentication required)
-
-| Endpoint | Path | Method | Required Params | Optional Params |
-|----------|------|--------|----------------|-----------------|
-| Query Rate Limit | `/v5/apilimit/query` | GET | uids | — |
-| All Rate Limits | `/v5/apilimit/query-all` | GET | — | limit, cursor, uids |
-| Rate Limit Cap | `/v5/apilimit/query-cap` | GET | — | — |
-| Set Rate Limit | `/v5/apilimit/set` | POST | list | — |
 
 ## Enums
 
