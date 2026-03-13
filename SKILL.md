@@ -2,7 +2,7 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.0.1
+  version: 1.0.0
   author: Bybit
   updated: 2026-03-10
 license: MIT
@@ -12,14 +12,14 @@ license: MIT
 
 Trade on Bybit using natural language. Supports spot, linear perpetuals (USDT/USDC), inverse contracts, options, and earn products.
 
-**Version:** 1.0.1 | **Updated:** 2026-03-10 | **Architecture:** Modular (on-demand loading)
+**Version:** 1.0.0 | **Updated:** 2026-03-10 | **Architecture:** Modular (on-demand loading)
 
 ### Auto Update (MUST follow at session start)
 
 This skill supports self-update. At the start of each new session, run this check **once**:
 
 ```
-1. LOCAL_VERSION = "1.0.1"  (from metadata above)
+1. LOCAL_VERSION = "1.0.0"  (from metadata above)
 2. curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/VERSION
 3. If remote version > LOCAL_VERSION:
    a. Tell user: "Bybit Skill has a new version (LOCAL → REMOTE). Updating..."
@@ -185,85 +185,6 @@ Tell the user what they can do. Examples:
 
 ---
 
-## Quick Reference (Fallback)
-
-If module loading fails, these core endpoints can be used directly with curl:
-
-### Market Data (no auth)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Tickers | `/v5/market/tickers` | GET | category, symbol |
-| Kline | `/v5/market/kline` | GET | symbol, interval, limit |
-| Orderbook | `/v5/market/orderbook` | GET | category, symbol, limit |
-| Instruments Info | `/v5/market/instruments-info` | GET | category, symbol |
-| Funding Rate | `/v5/market/funding/history` | GET | category, symbol |
-| Open Interest | `/v5/market/open-interest` | GET | category, symbol, intervalTime |
-| Recent Trades | `/v5/market/recent-trade` | GET | category, symbol |
-| Server Time | `/v5/market/time` | GET | — |
-
-### Trading (auth required)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Place Order | `/v5/order/create` | POST | category, symbol, side, orderType, qty |
-| Cancel Order | `/v5/order/cancel` | POST | category, symbol, orderId |
-| Amend Order | `/v5/order/amend` | POST | category, symbol, orderId |
-| Cancel All | `/v5/order/cancel-all` | POST | category |
-| Get Open Orders | `/v5/order/realtime` | GET | category |
-| Order History | `/v5/order/history` | GET | category |
-| Trade History | `/v5/execution/list` | GET | category |
-| Batch Place | `/v5/order/create-batch` | POST | category, request[] |
-| Batch Cancel | `/v5/order/cancel-batch` | POST | category, request[] |
-
-### Position (auth required)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Get Positions | `/v5/position/list` | GET | category |
-| Set Leverage | `/v5/position/set-leverage` | POST | category, symbol, buyLeverage, sellLeverage |
-| Set TP/SL | `/v5/position/trading-stop` | POST | category, symbol, tpslMode, positionIdx |
-| Switch Mode | `/v5/position/switch-mode` | POST | category, mode |
-| Closed PnL | `/v5/position/closed-pnl` | GET | category, symbol |
-
-### Account (auth required)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Wallet Balance | `/v5/account/wallet-balance` | GET | accountType |
-| Account Info | `/v5/account/info` | GET | — |
-| Fee Rate | `/v5/account/fee-rate` | GET | category |
-| Transaction Log | `/v5/account/transaction-log` | GET | — |
-| Set Margin Mode | `/v5/account/set-margin-mode` | POST | setMarginMode |
-
-### Asset (auth required)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Internal Transfer | `/v5/asset/transfer/inter-transfer` | POST | transferId, coin, amount, fromAccountType, toAccountType |
-| Coin Info | `/v5/asset/coin/query-info` | GET | coin |
-| Deposit Record | `/v5/asset/deposit/query-record` | GET | — |
-
-### Earn (auth required)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Product List | `/v5/earn/product` | GET | category |
-| Place Order | `/v5/earn/place-order` | POST | category, orderType, accountType, coin, amount, productId, orderLinkId |
-| Query Order | `/v5/earn/order` | GET | category |
-| Position | `/v5/earn/position` | GET | category |
-
-### BybitPay (auth required, `retCode=100000` = success, second-precision timestamps, `Version: 5.00` header)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Payment Creation | `/v5/bybitpay/create_pay` | POST | merchantId, paymentType, merchantTradeNo, orderAmount, currency |
-| Payment Result | `/v5/bybitpay/pay_result` | GET | merchantId, paymentType, payId |
-| Order Refund | `/v5/bybitpay/refund` | POST | merchantId, list[] |
-
-### Fiat & P2P (auth required, P2P: General Advertisers only)
-| Endpoint | Path | Method | Key Params |
-|----------|------|--------|-----------|
-| Fiat Quote | `/v5/fiat/quote-apply` | POST | fromCoin, fromCoinType, toCoin, toCoinType, requestAmount |
-| Fiat Trade | `/v5/fiat/trade-execute` | POST | quoteTxId, subUserId |
-| P2P Get Ads | `/v5/p2p/item/online` | POST | tokenId, currencyId, side |
-| P2P Get Orders | `/v5/p2p/order/simplifyList` | POST | — |
-
----
-
 ## Authentication
 
 ### Base URLs
@@ -284,7 +205,7 @@ If module loading fails, these core endpoints can be used directly with curl:
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.0.1` |
+| `User-Agent` | `bybit-skill/1.0.0` |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
@@ -316,7 +237,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.0.1" \
+  -H "User-Agent: bybit-skill/1.0.0" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -332,7 +253,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.0.1" \
+  -H "User-Agent: bybit-skill/1.0.0" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
