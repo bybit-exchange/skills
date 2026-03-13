@@ -2,7 +2,7 @@
 
 Trade on Bybit using natural language. Tell any AI assistant one sentence, and it can execute trades, check markets, manage positions, and more — zero installation required.
 
-**Version:** 1.0.0 | **License:** MIT | **Endpoints:** 253
+**Version:** 1.0.0 | **License:** MIT
 
 ## How It Works
 
@@ -25,37 +25,18 @@ Works with any AI assistant that can read files or URLs:
 - Cursor / Windsurf
 - Codex
 
-## Architecture
-
-```
-SKILL.md                  # Main skill file (~8K tokens) — quick start, module router, fallback
-├── modules/market.md     # Market data: prices, klines, orderbook, funding rates (24 endpoints)
-├── modules/spot.md       # Spot trading: orders, margin (24 endpoints)
-├── modules/derivatives.md # Futures & options: positions, leverage, TP/SL (19 endpoints)
-├── modules/earn.md       # Savings & staking (6 endpoints)
-├── modules/account.md    # Balances, transfers, sub-accounts, fees (74 endpoints)
-├── modules/advanced.md   # WebSocket, loans, RFQ, block trade, broker (78 endpoints)
-├── modules/pay.md        # Merchant payments, agreements (14 endpoints)
-└── modules/fiat.md       # Fiat OTC, P2P trading (23 endpoints)
-```
-
-**Modular on-demand loading** — you only install `SKILL.md`. The AI fetches module files from GitHub at runtime as needed, keeping token usage minimal.
-
 ## Capabilities
 
-| Module | What Users Can Do | Endpoints |
-|--------|-------------------|-----------|
-| **Market** | Real-time prices, klines (13 intervals), orderbook (500 levels), funding rates, open interest, volatility | 24 |
-| **Spot** | Market/limit orders, batch orders (20/batch), cancel, amend, spot margin | 24 |
-| **Derivatives** | Long/short, leverage, TP/SL, trailing stop, conditional orders, hedge mode, margin adjustment | 19 |
-| **Earn** | Browse products, subscribe, redeem, check yield history | 6 |
-| **Account** | Balances, internal transfers, deposit addresses, fee rates, sub-accounts, asset conversion | 74 |
-| **Advanced** | WebSocket streams, crypto loans, RFQ block trades, spread trading, broker management | 78 |
-| **Pay** | QR payments, refunds, recurring agreement billing | 14 |
-| **Fiat** | Fiat-to-crypto OTC, P2P ads and order management | 23 |
-| | **Total (deduplicated)** | **253** |
-
-> Spot and Derivatives share 9 order-management endpoints (`/v5/order/*`). Each module lists them independently for completeness, but they are counted only once in the total.
+| Module | What Users Can Do |
+|--------|-------------------|
+| **Market** | Real-time prices, klines (13 intervals), orderbook (500 levels), funding rates, open interest, volatility |
+| **Spot** | Market/limit orders, batch orders (20/batch), cancel, amend, spot margin |
+| **Derivatives** | Long/short, leverage, TP/SL, trailing stop, conditional orders, hedge mode, margin adjustment |
+| **Earn** | Browse products, subscribe, redeem, check yield history |
+| **Account** | Balances, internal transfers, deposit addresses, fee rates, sub-accounts, asset conversion |
+| **Advanced** | WebSocket streams, crypto loans, RFQ block trades, spread trading, broker management |
+| **Pay** | QR payments, refunds, recurring agreement billing |
+| **Fiat** | Fiat-to-crypto OTC, P2P ads and order management |
 
 ## Quick Start
 
