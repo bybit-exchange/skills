@@ -91,3 +91,7 @@ The skill includes a self-update mechanism. At session start, it checks the `VER
 ## License
 
 [MIT](LICENSE)
+
+## Contact
+
+If you have any feedback, questions, or suggestions, please contact: ai_agent@bybit.com
