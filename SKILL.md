@@ -2,7 +2,7 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.0.2
+  version: 1.0.3
   author: Bybit
   updated: 2026-03-10
 license: MIT
@@ -12,14 +12,14 @@ license: MIT
 
 Trade on Bybit using natural language. Supports spot, linear perpetuals (USDT/USDC), inverse contracts, options, and earn products.
 
-**Version:** 1.0.2 | **Updated:** 2026-03-10 | **Architecture:** Modular (on-demand loading)
+**Version:** 1.0.3 | **Updated:** 2026-03-10 | **Architecture:** Modular (on-demand loading)
 
 ### Auto Update (MUST follow at session start)
 
 This skill supports self-update. At the start of each new session, run this check **once**:
 
 ```
-1. LOCAL_VERSION = "1.0.2"  (from metadata above)
+1. LOCAL_VERSION = "1.0.3"  (from metadata above)
 2. curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/VERSION
 3. If remote version > LOCAL_VERSION:
    a. Tell user: "Bybit Skill has a new version (LOCAL → REMOTE). Updating..."
@@ -158,7 +158,7 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    curl -sf https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
 3. Read the fetched content and use it for the current and all future requests in that category
-4. If fetch fails: use the Quick Reference fallback below, or inform the user
+4. If fetch fails: inform the user that the module could not be loaded
 ```
 
 ### Module Index
@@ -179,9 +179,9 @@ Tell the user what they can do. Examples:
 1. **Match intent → load module**: A single user request may need multiple modules (e.g., "check BTC price then buy" → market + spot)
 2. **Auto-load dependencies**: When loading a module, also load all modules listed in its `Requires` column (e.g., loading derivatives → also load account if not already loaded)
 3. **Load once per session**: Do NOT re-fetch a module already loaded in this conversation
-4. **Fail gracefully**: If a module fetch fails, use the Quick Reference below as fallback. **CRITICAL: In fallback mode, write operations (POST) require extra caution — the full module contains detailed parameter requirements and validation rules. Prefer read-only (GET) operations. Only execute POST if you are confident about all required parameters.**
+4. **Fail gracefully**: If a module fetch fails, only execute read-only (GET) operations using the Authentication and Common Parameters sections. Do NOT execute POST operations in fallback mode — inform the user the module failed to load.
 5. **Multiple modules OK**: Load as many modules as needed for the user's request
-6. **Retry once**: If GitHub Raw fails, retry the same URL once. If still failing, use the Quick Reference fallback below.
+6. **Retry once**: If GitHub Raw fails, retry the same URL once. If still failing, inform the user. Only GET operations are available without the full module.
 
 ---
 
@@ -205,7 +205,7 @@ Tell the user what they can do. Examples:
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.0.2` |
+| `User-Agent` | `bybit-skill/1.0.3` |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
@@ -237,7 +237,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.0.2" \
+  -H "User-Agent: bybit-skill/1.0.3" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -253,7 +253,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.0.2" \
+  -H "User-Agent: bybit-skill/1.0.3" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
@@ -414,6 +414,8 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
 | Private query (read-only) | Balance, positions, orders, trade history | **No** |
 | **Mainnet write operations** | **Place order, cancel order, set leverage, transfer, withdraw** | **Yes — structured confirmation required** |
 | Testnet write operations | Same as above but on testnet | **No** |
+
+**Read-only POST exception**: Some endpoints use POST for queries (e.g., P2P browsing ads, listing payment methods). These do not modify state and do NOT require confirmation. When a module marks a POST endpoint as "read-only" or "query", skip the confirmation card.
 
 ### Structured Operation Confirmation (Mainnet only)
 
