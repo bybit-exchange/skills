@@ -125,7 +125,7 @@ curl -s -X POST "${BASE_URL}/v5/bybitpay/create_pay" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
   -H "Version: 5.00" \
-  -H "User-Agent: bybit-skill/1.0.3" \
+  -H "User-Agent: bybit-skill/1.1.0" \
   -H "X-Referer: bybit-skill" \
   -d "$BODY"
 ```
