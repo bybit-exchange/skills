@@ -58,13 +58,23 @@ POST /v5/copy-trade/private/follower/trade-setting/create
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | `leaderMark` | string | yes | Exact leader identifier from leaderboard |
-| `investmentE8` | **string** | yes | ⚠️ Must be a **string** (e.g. `"10000000000"` = 100 USDT) — different from TradFi which uses integer |
+| `investmentE8` | **string** | yes | Investment amount in e8 precision. `"10000000000"` = 100 USDT. Must be a **string** — different from TradFi which uses integer |
 
 > `investmentE8` must be ≥ `100000000` (1 USDT) and divisible by `100000000` (whole USDT amounts only). Uses UTA account balance. Do NOT infer `leaderMark` from nickname — must come from leaderboard API.
 
-**After successful bind**, show success message with link:
-- Mainnet: `https://www.bybit.com/copyTrade/trade-center/followLeaderDetail?leaderMark=<leaderMark>`
-- Testnet: `https://testnet.bybit.com/copyTrade/trade-center/followLeaderDetail?leaderMark=<leaderMark>`
+**Response** (on success):
+
+| Field | Description |
+|-------|-------------|
+| `errSymbols` | Array of symbols that failed to set up (may be empty on full success) |
+| `setLeverageType` | Leverage setting type applied |
+| `setLeverageErrorCode` | Error code for leverage setting (0 = no error) |
+
+> Check `errSymbols` — if non-empty, some symbols failed to configure. Inform the user which symbols had issues.
+
+**After successful bind**, show success message with link (URL-encode `leaderMark` in the URL since it may contain `+`, `=`, `/`):
+- Mainnet: `https://www.bybit.com/copyTrade/trade-center/followLeaderDetail?leaderMark=<URL-encoded leaderMark>`
+- Testnet: `https://testnet.bybit.com/copyTrade/trade-center/followLeaderDetail?leaderMark=<URL-encoded leaderMark>`
 
 ### Copy Trading TradFi — Create Follow Binding (authentication required)
 
@@ -76,13 +86,63 @@ POST /v5/copy-mt5/private/follower/trade-setting/create
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | `providerMark` | string | yes | Exact provider identifier from leaderboard |
-| `investmentE8` | **integer** | yes | ⚠️ Must be an **integer** (e.g. `30000000000` = 300 USDT) — different from Classic which uses string |
+| `investmentE8` | **integer** | yes | Investment amount in e8 precision. `30000000000` = 300 USDT. Must be an **integer** — different from Classic which uses string |
 
 > Same constraints as Classic: ≥ 1 USDT, whole-number amounts. Uses funding account balance.
 
-**After successful bind**, show success message with link:
-- Mainnet: `https://www.bybit.com/copyMt5/followLeaderDetail?type=current&providerMark=<providerMark>`
-- Testnet: `https://testnet.bybit.com/copyMt5/followLeaderDetail?type=current&providerMark=<providerMark>`
+**After successful bind**, show success message with link (URL-encode `providerMark` in the URL since it may contain `+`, `=`, `/`):
+- Mainnet: `https://www.bybit.com/copyMt5/followLeaderDetail?type=current&providerMark=<URL-encoded providerMark>`
+- Testnet: `https://testnet.bybit.com/copyMt5/followLeaderDetail?type=current&providerMark=<URL-encoded providerMark>`
+
+---
+
+## Error Codes
+
+### Classic Bind Errors
+
+| Code | Error |
+|------|-------|
+| 10001 | Parameter error |
+| 10016 | Server error |
+| 12001 | Leader trading mode not supported |
+| 12021 | Already following max leaders |
+| 12045 | Copy trading not activated |
+| 12046 | Leader not found or not active |
+| 12047 | Investment amount invalid |
+| 12048 | Insufficient balance (UTA account) |
+| 12049 | Risk limit exceeded |
+| 12050 | Already following this leader |
+| 12051 | Copy trading restricted for this account |
+| 12052 | Leader's follower capacity full |
+| 12054 | Leader suspended |
+| 12068 | System maintenance |
+| 12077 | Leader closed to new followers |
+| 12102 | Account type not supported (need UTA) |
+| 39408 | Duplicate request |
+
+### TradFi Bind Errors
+
+| Code | Error |
+|------|-------|
+| 10001 | Parameter error |
+| 10016 | Server error |
+| 12068 | System maintenance |
+| 12101 | Account type not supported |
+| 12803 | Provider not found or not active |
+| 12804 | Already following this provider |
+| 12805 | Provider's follower capacity full |
+| 12806 | Investment amount invalid |
+| 12807 | Insufficient balance (funding account) |
+| 12808 | Already following max providers |
+| 12809 | Copy trading not activated |
+| 12810 | Provider suspended |
+| 12811 | Copy trading restricted for this account |
+| 12812 | Provider closed to new followers |
+| 12813 | Risk limit exceeded |
+| 12814 | Funding account locked |
+| 12815 | Provider trading mode not supported |
+| 12816 | Region restriction |
+| 39415 | Duplicate request |
 
 ---
 
@@ -122,8 +182,8 @@ POST /v5/order/create
 |----------|------|--------|------|-----------|
 | Classic Leaderboard | `/v5/copy-trade/recommend-leader-list` | GET | No | — |
 | TradFi Leaderboard | `/v5/copy-mt5/recommend-provider-list` | GET | No | — |
-| Classic Follow Bind | `/v5/copy-trade/private/follower/trade-setting/create` | POST | Yes | leaderMark, investmentE8 |
-| TradFi Follow Bind | `/v5/copy-mt5/private/follower/trade-setting/create` | POST | Yes | providerMark, investmentE8 |
+| Classic Follow Bind | `/v5/copy-trade/private/follower/trade-setting/create` | POST | Yes | leaderMark, investmentE8(string) |
+| TradFi Follow Bind | `/v5/copy-mt5/private/follower/trade-setting/create` | POST | Yes | providerMark, investmentE8(integer) |
 | Check Symbol Eligibility | `/v5/market/instruments-info` | GET | No | category=linear, check `copyTrading` field |
 | Place Order | `/v5/order/create` | POST | Yes | category=linear, positionIdx required |
 | View Positions | `/v5/position/list` | GET | Yes | category=linear |
@@ -137,3 +197,6 @@ POST /v5/order/create
 - API Key needs "Contract - Orders & Positions" permission
 - Classic uses `leaderMark` (string); TradFi uses `providerMark` (string) — never confuse
 - Classic `investmentE8` is a string; TradFi `investmentE8` is an integer — match the type exactly
+- `leaderMark`/`providerMark` values contain Base64 characters (`+`, `=`, `/`) — URL-encode them when building links
+- Classic bind uses UTA account; TradFi bind uses funding account — check respective balances before binding
+- On Classic bind success, check `errSymbols` in response for any symbols that failed to configure
