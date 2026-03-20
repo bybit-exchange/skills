@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.1.0
+  version: 1.1.1  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-03-19
+  updated: 2026-03-20
 license: MIT
 ---
 
@@ -18,35 +18,43 @@ When rules in this skill conflict, follow this order: **Safety > User Responsive
 
 ### Auto Update (MUST follow at session start)
 
-This skill supports self-update with integrity verification. At the start of each new session, run this check **once**:
+This skill supports self-update with integrity verification. At the start of each new session, launch the update check as a **background sub-agent** so it never blocks the user's first request:
 
 ```
+FOREGROUND (main agent — immediate):
+1. Respond to the user's request using the current local version. Do NOT wait for the update check.
+
+BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
-2. MANIFEST = curl -sf -H "User-Agent: bybit-skill/{LOCAL_VERSION}" https://api.bybit.com/skill/manifest
+2. SKILL_DIR = directory where this SKILL.md is located
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.1.1" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
-3. If fetch fails: silently continue with current version. Cache nothing.
-4. Version comparison (semver): split by ".", compare major → minor → patch numerically.
+4. If fetch fails: return {updated: 2026-03-20
+5. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
-   a. Tell user: "Bybit Skill has a new version (LOCAL → REMOTE). Updating..."
-   b. SKILL_DIR = directory where this SKILL.md is located
-   c. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/{LOCAL_VERSION}" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+   a. For each file in manifest.files:
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.1.1" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
-      - If mismatch: ABORT entire update, tell user "Update verification failed, continuing with current version."
+      - If mismatch: ABORT entire update. return {updated: 2026-03-20
       - If match: save to SKILL_DIR/.skill-update-tmp/<file>
-   d. ALL files verified → move from temp to SKILL_DIR:
+   b. ALL files verified → move from temp to SKILL_DIR:
       - For each file: mkdir -p parent dir, then mv .skill-update-tmp/<file> SKILL_DIR/<file>
       - rm -rf SKILL_DIR/.skill-update-tmp/
-   e. Tell user: "Updated to vREMOTE. Please restart session to use the new version."
-5. If manifest.version == LOCAL_VERSION: silently continue.
-6. Cache manifest in session memory for module loading (see Module Router).
+   c. return {updated: 2026-03-20
+   If manifest.version == LOCAL_VERSION:
+   d. return {updated: 2026-03-20
+
+WHEN SUB-AGENT COMPLETES (main agent receives result):
+- If updated: 2026-03-20
+- If error: silently continue with current version.
+- Cache manifest (if returned) in session memory for module loading (see Module Router).
 ```
 
 **Rules:**
 - Check at most ONCE per session. Do not re-check during the same conversation.
 - If any network request fails (timeout, 404, etc.), skip silently and proceed with current version. (See Graceful Degradation below for unified fallback rules.)
-- Never block the user's first request — respond to the user first, then run the version check. If an update is found, notify the user after your response (e.g., "By the way, a Skill update is available..."). Do NOT wait for the version check before answering.
+- **Never block the user's first request.** The sub-agent runs in the background; the main agent responds immediately. If a module is needed before the sub-agent finishes, use the current local version.
 - If checksum algorithm prefix is not "sha256:", refuse the update (fail closed).
 
 ---
@@ -169,11 +177,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/{LOCAL_VERSION}" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.1.1" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/{LOCAL_VERSION}" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.1.1" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -204,7 +212,7 @@ Tell the user what they can do. Examples:
 > **Fiat/P2P note**: P2P responses use `ret_code` (underscore format, not `retCode`). P2P ad posting requires General Advertiser+ permission level.
 | copy trading, leader, follower, copy trade, leaderboard, recommend trader | **copy-trading** | `modules/copy-trading.md` | derivatives, account |
 | grid bot, DCA bot, martingale, combo bot, trading bot, create bot, close bot | **trading-bot** | `modules/trading-bot.md` | account |
-| TWAP, iceberg, chase, strategy order, split order, algorithmic | **strategy** | `modules/strategy.md` | derivatives |
+| TWAP, iceberg, chase order, chaseOrder, strategy order, split order, algorithmic | **strategy** | `modules/strategy.md` | — |
 
 ### Routing Notes
 
@@ -250,7 +258,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/{LOCAL_VERSION}` (e.g. `bybit-skill/1.1.0`) |
+| `User-Agent` | `bybit-skill/1.1.1 (e.g. `bybit-skill/1.1.1 |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
@@ -286,7 +294,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/{LOCAL_VERSION}" \
+  -H "User-Agent: bybit-skill/1.1.1" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -302,7 +310,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/{LOCAL_VERSION}" \
+  -H "User-Agent: bybit-skill/1.1.1" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
