@@ -14,7 +14,7 @@ Strategy endpoints use a **different category format** from standard trading end
 
 | Category | Description |
 |----------|-------------|
-| `UTA_USDT` | USDT perpetual (equivalent to `linear`) |
+| `UTA_USDT` | USDT perpetual (standard endpoints call this `linear`) |
 | `UTA_USDC` | USDC perpetual |
 | `UTA_USDC_FUTURE` | USDC futures |
 | `UTA_USDT_FUTURE` | USDT futures |
@@ -22,7 +22,7 @@ Strategy endpoints use a **different category format** from standard trading end
 | `UTA_INVERSE` | Inverse perpetual |
 | `UTA_INVERSE_FUTURE` | Inverse futures |
 
-> **IMPORTANT**: Always use `UTA_*` prefix format for strategy endpoints. While `linear`/`spot` may silently work as aliases in some queries, use the canonical `UTA_*` format to ensure consistent behavior.
+> ⚠️ **IMPORTANT**: Strategy API **ONLY** accepts `UTA_*` category values. Do NOT use `linear` or `spot` — they will be rejected. Map: `linear` → `UTA_USDT`, `spot` → `UTA_SPOT`, `inverse` → `UTA_INVERSE`.
 
 ---
 
