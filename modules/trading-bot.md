@@ -316,6 +316,8 @@ Rate limit: 10 qps per UID. **Note: This is POST, not GET.**
 
 ## Spot DCA Bot
 
+> ⚠️ **Limit**: Max **5 trading pairs** per DCA bot. If user requests more than 5, ask them to choose up to 5.
+
 ### Create Bot
 
 ```
