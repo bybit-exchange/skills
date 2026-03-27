@@ -91,7 +91,7 @@ Rate limit: 5/s (UID), 5000/s global.
 | chainCode | string | Y | Blockchain code |
 | tokenAddress | string | Y | Target token contract address |
 
-**Response** per token: `tokenCode`(CEX_id), `symbol`(e.g. USDT), `limit`(max amount), `supportChains[]`.
+**Response** per token: `tokenCode`(CEX_id), `symbol`(e.g. USDT), `limit`(min amount), `supportChains[]`.
 
 > Call this to resolve user input like "USDT" to the proper `CEX_<id>` code.
 

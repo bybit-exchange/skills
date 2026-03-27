@@ -205,7 +205,7 @@ Tell the user what they can do. Examples:
 | price, ticker, kline, chart, orderbook, depth, funding rate, open interest, market data | **market** | `modules/market.md` | — |
 | buy, sell, spot, swap, exchange, convert, limit order, market order, cancel order, spot margin | **spot** | `modules/spot.md` | account |
 | long, short, leverage, futures, perpetual, close position, take profit, stop loss, trailing stop, conditional order, hedge mode, option, put, call, strike, expiry | **derivatives** | `modules/derivatives.md` | account |
-| earn, stake, redeem, yield, savings, flexible, fixed deposit, BYUSDT, mint, dual assets, structured product | **earn** | `modules/earn.md` | account |
+| earn, stake, redeem, yield, savings, flexible, fixed deposit, dual assets, structured product | **earn** | `modules/earn.md` | account |
 | balance, wallet, transfer, deposit, withdraw, fee, sub-account, API key, asset | **account** | `modules/account.md` | — |
 | websocket, stream, loan, borrow, repay, RFQ, block trade, spread, lending, broker, rate limit | **advanced** | `modules/advanced.md` | — |
 | payment, pay, merchant, QR code, checkout, payout, refund, agreement, recurring, subscription, deduction | **pay** | `modules/pay.md` | — |
@@ -227,7 +227,7 @@ Tell the user what they can do. Examples:
 ### Routing Notes
 
 - Keywords are **hints, not strict rules** — always use semantic understanding of the user's full request to determine the correct module(s). When ambiguous (e.g., "borrow" could mean spot margin or advanced lending), prefer the module matching the broader conversation context, or ask the user to clarify.
-- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/BYUSDT → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA → trading-bot, 链上/meme/DEX/代币 → alpha-trade
+- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA → trading-bot, 链上/meme/DEX/代币 → alpha-trade
 
 ### Loading Rules
 

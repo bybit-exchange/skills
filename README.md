@@ -32,9 +32,13 @@ Works with any AI assistant that can read files or URLs:
 | **Market** | Real-time prices, klines (13 intervals), orderbook (500 levels), funding rates, open interest, volatility |
 | **Spot** | Market/limit orders, batch orders (20/batch), cancel, amend, spot margin |
 | **Derivatives** | Long/short, leverage, TP/SL, trailing stop, conditional orders, hedge mode, margin adjustment |
-| **Earn** | Browse products, subscribe, redeem, check yield history |
+| **Earn** | Flexible saving, on-chain staking, dual assets (structured products with BuyLow/SellHigh) |
 | **Account** | Balances, internal transfers, deposit addresses, fee rates, sub-accounts, asset conversion |
 | **Advanced** | WebSocket streams, crypto loans, RFQ block trades, spread trading, broker management |
+| **Strategy** | TWAP, iceberg orders, chase orders, algorithmic execution |
+| **Trading Bot** | Spot/futures grid bots, DCA bots, martingale, combo bots |
+| **Copy Trading** | Follow top traders, classic and TradFi copy trading |
+| **Alpha Trade** | On-chain DEX token swaps, meme coins, quote-then-execute model |
 | **Pay** | QR payments, refunds, recurring agreement billing |
 | **Fiat** | Fiat-to-crypto OTC, P2P ads and order management |
 
@@ -91,7 +95,3 @@ The skill includes a self-update mechanism. At session start, it checks the `VER
 ## License
 
 [MIT](LICENSE)
-
-## Contact
-
-If you have any feedback, questions, or suggestions, please contact: ai_agent@bybit.com
