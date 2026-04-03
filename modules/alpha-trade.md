@@ -4,7 +4,7 @@
 
 ## Scenario: Alpha On-chain Trading
 
-User might say: "Buy a meme coin", "Swap USDT for SOL token", "Sell my on-chain tokens", "Check my on-chain assets", "What's the price of this token"
+User might say: "Buy a meme coin", "Swap USDT for SOL token", "Sell my on-chain tokens", "Check my on-chain assets", "What's the price of this token", "View the list of tradable on-chain tokens", "Query the on-chain token list", "Which tokens are available for on-chain trading"
 
 > Alpha Trade enables **on-chain token trading** (DEX) through Bybit's unified account. Uses a **quote-then-execute** model: get a quote first, confirm with user, then execute. Settlement is on-chain (10-60s). Token codes use `CEX_<id>` for payment tokens (USDT, USDC) and `DEX_<id>` for on-chain tokens. **KYC required.**
 
@@ -27,7 +27,10 @@ User might say: "Buy a meme coin", "Swap USDT for SOL token", "Sell my on-chain 
 
 ## Token Discovery & Info
 
-### Get Tradable Token List
+### Get Tradable Token List (View tradable on-chain token list)
+
+> **When the user says "view tradable on-chain token list", "which tokens are available for trading", or "on-chain token list", this endpoint must be called.**
+> **The correct endpoint is `POST /v5/alpha/trade/biz-token-list` — do not use any other endpoint.**
 
 ```
 POST /v5/alpha/trade/biz-token-list
@@ -42,7 +45,7 @@ Rate limit: 5/s (UID), 5000/s global.
 
 **Response** per token: `tokenCode`(DEX_id), `chainCode`, `tokenAddress`, `symbol`, `riskFlag`(0=safe, 1=risk), `minOrderQuantity`, `maxOrderQuantity`, `payTokenCodes[]`(supported CEX payment tokens), `tokenTags[]`.
 
-> If `riskFlag=1`, warn user before trading.
+> **Risk flag note**: Each token contains a `riskFlag` field. If `riskFlag=1`, a risk warning must be displayed to the user before proceeding. When displaying the token list, the `riskFlag` risk status of each token must be indicated.
 
 ### Get Token Details
 
@@ -241,3 +244,4 @@ Rate limit: 3/s (UID), 2000/s global.
 - `correctingCode` is MD5 of `(quoteData + fromTokenCode + fromTokenAmount + toTokenCode)` for tamper protection
 - Idempotent via `quoteDataId` — duplicate submissions return the same order
 - Uses standard V5 response format (`retCode`/`retMsg`)
+- **Querying the tradable on-chain token list must use `POST /v5/alpha/trade/biz-token-list`** — each token in the response contains a `riskFlag` field (0=safe, 1=risk); the risk status must be indicated when displaying the list

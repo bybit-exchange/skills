@@ -4,7 +4,7 @@
 
 ## Scenario: Strategy Orders
 
-User might say: "Split my BTC buy into smaller orders over 10 minutes", "Place an iceberg order", "Chase the best price", "Stop my strategy"
+User might say: "Split my BTC buy into smaller orders over 10 minutes", "Place an iceberg order", "Chase the best price", "Stop my strategy", "Pause my strategy", "Resume my strategy"
 
 ---
 
@@ -92,6 +92,8 @@ POST /v5/strategy/create
 
 Dynamic price tracking for fast execution — chases best bid/ask.
 
+> ⚠️ **CRITICAL**: The `strategyType` value MUST be `chaseOrder` (camelCase). Do NOT use `chase`, `chase_order`, or any other variation — they will be rejected. Always include `"strategyType":"chaseOrder"` in the request body.
+
 **Required**: category, symbol, side, size, strategyType(`chaseOrder`), plus ONE of chaseDistance or chasePercentE4
 
 | Param | Type | Required | Description |
@@ -100,7 +102,7 @@ Dynamic price tracking for fast execution — chases best bid/ask.
 | symbol | string | Y | e.g. `BTCUSDT` |
 | side | string | Y | `Buy` or `Sell` |
 | size | string | Y | Total quantity in base currency |
-| strategyType | string | Y | `chaseOrder` (not `chase`) |
+| strategyType | string | Y | **`chaseOrder`** (camelCase, NOT `chase`) |
 | chaseDistance | string | One of | Absolute offset from best bid/ask. For low liquidity pairs |
 | chasePercentE4 | integer | One of | Percentage offset in basis points (10=0.1%, 50=0.5%, 100=1%). Range: [1, 1000]. For high liquidity pairs |
 | maxChasePrice | string | N | Price protection limit. Strongly recommended |
@@ -128,12 +130,12 @@ POST /v5/strategy/create
 
 ### Strategy Status Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| 2 | Running | Actively executing orders |
+| Code | Status | Description                              |
+|------|--------|------------------------------------------|
+| 2 | Running | Actively executing orders                |
 | 3, 4 | Terminated | Stopped (check terminateType for reason) |
-| 5 | Paused | Temporarily halted |
-| 6 | Untriggered | Waiting for trigger price condition |
+| 5 | Paused | Temporarily halted, webhook only         |
+| 6 | Untriggered | Waiting for trigger price condition      |
 
 ### Terminate Type Codes
 
@@ -159,7 +161,7 @@ POST /v5/strategy/create
 | 4 | Cancelled |
 | 5 | Rejected |
 
-> **Stop behavior**: status -> `Terminated`, all pending orders canceled, partially filled orders cancel remaining portion. Filled orders unaffected. **Stopped strategies cannot be resumed** -- must create a new one. Rate limit: 10 qps.
+> ⚠️ **Stop behavior is PERMANENT and IRREVERSIBLE**: Calling `/v5/strategy/stop` permanently terminates the strategy — it **cannot be resumed**. All pending orders are canceled, partially filled orders cancel remaining portion. Filled orders unaffected. **Stopped strategies cannot be resumed under any circumstances** — you must create a new strategy. **There is NO pause/resume functionality available to users**; status=5 (Paused) is system-controlled only and cannot be triggered by user API calls. If a user asks to "pause" or "resume" a strategy, you MUST inform them that pausing and resuming is NOT possible — the only option is to permanently stop the current strategy and create a new one. Rate limit: 10 qps.
 
 ---
 
@@ -188,9 +190,10 @@ Strategy endpoints use the **standard V5 response format** (`retCode`/`retMsg`):
 
 - `strategyId` is a UUID returned from the create response -- store it for query/stop calls
 - Only `Running` (2) or `Untriggered` (6) strategies can be stopped
+- **⚠️ Stopping a strategy is PERMANENT and irreversible — it cannot be resumed**
 - TWAP: duration must be divisible by interval; min duration 300s
 - Iceberg: requires ONE of subSize or orderCount; subSize must be < total size
-- Chase: strategyType is `chaseOrder` (not `chase`); generates frequent order cancellations/replacements (watch rate limits)
+- Chase: strategyType is `chaseOrder` (camelCase, NOT `chase`); generates frequent order cancellations/replacements (watch rate limits)
 - Chase: many cancelled orders (status=4) is NORMAL behavior -- it cancels and replaces to track price
 - chasePercentE4 and chaseDistance are mutually exclusive across all strategy types
 - All size/price params are strings; duration/interval/chasePercentE4/orderCount are integers
