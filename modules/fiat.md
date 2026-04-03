@@ -35,7 +35,7 @@ Standard V5 authentication. Response: `{"retCode": 0, "retMsg": "...", "result":
 **IMPORTANT: The P2P API is only accessible by General Advertisers or above.** Regular users cannot use these endpoints.
 
 **P2P API conventions:**
-- Response uses `ret_code` (underscore), not `retCode`: `{"ret_code": 0, "ret_msg": "SUCCESS", "result": {...}}`
+- P2P responses use `ret_code` and `ret_msg` fields (with underscores): `{"ret_code": 0, "ret_msg": "SUCCESS", "result": {...}}`
 - Most endpoints use **POST** with JSON body (even for queries)
 - Uses standard V5 HMAC-SHA256 authentication (millisecond timestamps)
 

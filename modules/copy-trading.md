@@ -58,9 +58,9 @@ POST /v5/copy-trade/private/follower/trade-setting/create
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | `leaderMark` | string | yes | Exact leader identifier from leaderboard |
-| `investmentE8` | **string** | yes | Investment amount in e8 precision. `"10000000000"` = 100 USDT. Must be a **string** — different from TradFi which uses integer |
+| `investmentE8` | **string** | yes | Investment amount in **e8 precision** (amount × 100000000). Example: 100 USDT → `"10000000000"`. Must be a **string** — different from TradFi which uses integer |
 
-> `investmentE8` must be ≥ `100000000` (1 USDT) and divisible by `100000000` (whole USDT amounts only). Uses UTA account balance. Do NOT infer `leaderMark` from nickname — must come from leaderboard API.
+> `investmentE8` e8 precision conversion rule: USDT amount × 100000000 = investmentE8 value. For example, 100 USDT = `"10000000000"`, 200 USDT = `"20000000000"`. Must be ≥ `100000000` (1 USDT) and divisible by `100000000` (whole USDT amounts only). Uses UTA account balance. Do NOT infer `leaderMark` from nickname — must come from leaderboard API.
 
 **Response** (on success):
 
@@ -86,9 +86,9 @@ POST /v5/copy-mt5/private/follower/trade-setting/create
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | `providerMark` | string | yes | Exact provider identifier from leaderboard |
-| `investmentE8` | **integer** | yes | Investment amount in e8 precision. `30000000000` = 300 USDT. Must be an **integer** — different from Classic which uses string |
+| `investmentE8` | **integer** | yes | Investment amount in **e8 precision** (amount × 100000000). Example: 100 USDT → `10000000000`. Must be an **integer** — different from Classic which uses string |
 
-> Same constraints as Classic: ≥ 1 USDT, whole-number amounts. Uses funding account balance.
+> `investmentE8` e8 precision conversion rule: USDT amount × 100000000 = investmentE8 value. For example, 100 USDT = `10000000000`, 300 USDT = `30000000000`. Same constraints as Classic: ≥ 1 USDT, whole-number amounts. Uses funding account balance.
 
 **After successful bind**, show success message with link (URL-encode `providerMark` in the URL since it may contain `+`, `=`, `/`):
 - Mainnet: `https://www.bybit.com/copyMt5/followLeaderDetail?type=current&providerMark=<URL-encoded providerMark>`
@@ -182,8 +182,8 @@ POST /v5/order/create
 |----------|------|--------|------|-----------|
 | Classic Leaderboard | `/v5/copy-trade/recommend-leader-list` | GET | No | — |
 | TradFi Leaderboard | `/v5/copy-mt5/recommend-provider-list` | GET | No | — |
-| Classic Follow Bind | `/v5/copy-trade/private/follower/trade-setting/create` | POST | Yes | leaderMark, investmentE8(string) |
-| TradFi Follow Bind | `/v5/copy-mt5/private/follower/trade-setting/create` | POST | Yes | providerMark, investmentE8(integer) |
+| Classic Follow Bind | `/v5/copy-trade/private/follower/trade-setting/create` | POST | Yes | leaderMark, investmentE8(string, e8 precision, ×100000000) |
+| TradFi Follow Bind | `/v5/copy-mt5/private/follower/trade-setting/create` | POST | Yes | providerMark, investmentE8(integer, e8 precision, ×100000000) |
 | Check Symbol Eligibility | `/v5/market/instruments-info` | GET | No | category=linear, check `copyTrading` field |
 | Place Order | `/v5/order/create` | POST | Yes | category=linear, positionIdx required |
 | View Positions | `/v5/position/list` | GET | Yes | category=linear |
@@ -197,6 +197,7 @@ POST /v5/order/create
 - API Key needs "Contract - Orders & Positions" permission
 - Classic uses `leaderMark` (string); TradFi uses `providerMark` (string) — never confuse
 - Classic `investmentE8` is a string; TradFi `investmentE8` is an integer — match the type exactly
+- **`investmentE8` e8 precision**: Investment amount (USDT) × 100000000 = investmentE8 value. 100 USDT = `10000000000`, 300 USDT = `30000000000`
 - `leaderMark`/`providerMark` values contain Base64 characters (`+`, `=`, `/`) — URL-encode them when building links
 - Classic bind uses UTA account; TradFi bind uses funding account — check respective balances before binding
 - On Classic bind success, check `errSymbols` in response for any symbols that failed to configure

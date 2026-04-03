@@ -145,6 +145,14 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Orderbook | `/v5/spread/orderbook` | GET | symbol, limit | — | linear |
 | Tickers | `/v5/spread/tickers` | GET | symbol | — | linear |
 | Recent Trades | `/v5/spread/recent-trade` | GET | symbol | limit | linear |
+| Max Qty (Wallet Balance) | `/v5/spread/max-qty` | GET | symbol, side, orderPrice | — | linear |
+
+### Spread Trade — Max Qty Notes
+
+- **Purpose**: Query the spread wallet available balance (`ab`) for a given symbol and side before placing an order. Use this to validate order size against available funds.
+- **`side` enum**: `1` = Buy, `2` = Sell
+- **`ab` field**: Returned available balance is truncated to 8 decimal places (not rounded).
+- **Typical flow**: Call `/v5/spread/max-qty` with the target `symbol`, `side`, and intended `orderPrice` → use the returned `ab` to determine the maximum allowable qty → then call `/v5/spread/order/create`.
 
 ---
 
@@ -166,3 +174,4 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 * **direction** (collateral adjust): `ADD` | `REDUCE`
 * **cancelType**: `CancelByUser` | `CancelByReduceOnly` | `CancelByPrepareLiq` | `CancelByPrepareAdl` | `CancelByAdmin` | `CancelBySettle` | `CancelByTpSlTsClear` | `CancelBySmp` | `CancelByDCP`
+* **spread side** (max-qty): `1` = Buy | `2` = Sell

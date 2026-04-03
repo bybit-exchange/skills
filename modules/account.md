@@ -41,7 +41,7 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
 |----------|------|--------|----------------|-----------------|------------|
 | Wallet Balance | `/v5/account/wallet-balance` | GET | accountType | coin | — |
-| Asset Overview | `/v5/asset/asset-overview` | GET | — | accountType, coin | — |
+| Asset Overview | `/v5/asset/asset-overview` | GET | — | accountType, memberId, valuationCurrency | — |
 | Account Info | `/v5/account/info` | GET | — | — | — |
 | Borrow History | `/v5/account/borrow-history` | GET | — | currency, startTime, endTime, limit, cursor | — |
 | Set Collateral | `/v5/account/set-collateral-switch` | POST | coin, collateralSwitch | — | — |
@@ -68,6 +68,9 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Set Price Limit Action | `/v5/account/set-limit-px-action` | POST | category, modifyEnable | — | linear, inverse |
 | Set Delta Neutral Mode | `/v5/account/set-delta-mode` | POST | deltaHedgeMode | — | option |
 | Apply Demo Funds | `/v5/account/demo-apply-money` | POST | — | adjustType, utaDemoApplyMoney | — |
+| Option Asset Info | `/v5/account/option-asset-info` | GET | — | — | option |
+| Pay Info | `/v5/account/pay-info` | GET | — | coin | — |
+| Trade Info For Analysis | `/v5/account/trade-info-for-analysis` | GET | — | symbol, startTime, endTime | — |
 
 ### Asset (authentication required)
 
@@ -108,6 +111,8 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Exchange History | `/v5/asset/exchange/query-convert-history` | GET | — | accountType, index, limit | — |
 | Exchange Convert Limit | `/v5/asset/exchange/query-convert-limit` | GET | fromCoin, toCoin, accountType | — | — |
 | Exchange Order List | `/v5/asset/exchange/query-order-list` | GET | accountType | index, limit | — |
+| Portfolio Margin | `/v5/asset/portfolio-margin` | GET | — | baseCoin | — |
+| Total Members Assets | `/v5/asset/total-members-assets` | GET | — | coin | — |
 
 ### User (authentication required)
 
@@ -125,9 +130,43 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Referral List | `/v5/user/invitation/referrals` | GET | — | limit, cursor | — |
 | Sign Agreement | `/v5/user/agreement` | POST | agree, category | — | — |
 
+## Endpoint Notes
+
+### Asset Overview (`/v5/asset/asset-overview`)
+- Parameters updated: `category` and `coin` replaced by `accountType`, `memberId`, and `valuationCurrency`.
+- `accountType` accepts comma-separated values: `SPOT`, `UNIFIED`, `FUND`, `CONTRACT`, `INVESTMENT`, `OPTION`. If omitted, returns all account types.
+- `memberId` specifies a sub-account to query. If API key belongs to a sub-account, must match own UID or be omitted.
+- `valuationCurrency` defaults to `USD` if not provided.
+- Accounts with zero balance are filtered out, except for `UNIFIED` and `FUND` account types.
+
+### Trading Behavior Config (`/v5/account/user-setting-config`)
+- Response now includes additional fields: `lpaSpot` (spot LPA switch), `lpaPerp` (perpetual LPA switch), `smsef` (spot MNT fee deduction switch), `fmsef` (futures/contract MNT fee deduction switch), `deltaEnable` (delta account mode status).
+
+### Option Asset Info (`/v5/account/option-asset-info`)
+- No parameters required. Returns option asset PNL information grouped by coin, including `totalDelta`, `totalRPL`, `totalUPL`, `assetIM`, `assetMM` per coin.
+
+### Pay Info (`/v5/account/pay-info`)
+- Returns repayment (pay) information including collateral details per coin: `availableSize`, `availableValue`, `coinScale`, `borrowSize`, `spotHedgeAmount`, `assetFrozen`.
+- If `coin` is not specified, returns all repayment info.
+
+### Trade Info For Analysis (`/v5/account/trade-info-for-analysis`)
+- Returns trade analysis data for a given symbol including buy/sell execution statistics, PNL, and daily summary.
+- All parameters optional. If `symbol` is not specified, returns aggregated data.
+- Response fields include: `symbolRnl`, `netExecQty`, `sumExecValue`, `sumExecQty`, `avgBuyExecPrice`, `sumBuyExecValue`, `sumBuyExecQty`, `sumBuyExecFee`, `sumBuyOrderQty`, `avgSellExecPrice`, `sumSellExecValue`, `sumSellExecQty`, `sumSellExecFee`, `sumSellOrderQty`, `maxMarginVersion`, `baseCoin`, `settleCoin`.
+
+### Portfolio Margin (`/v5/asset/portfolio-margin`)
+- Returns portfolio margin information including wallet balance, margin rates, and asset PNL range.
+- If `baseCoin` is not specified, returns all base coins.
+- Response wallet fields include: `equity`, `cashBalance`, `marginBalance`, `availableBalance`, `totalRPL`, `totalSessionRPL`, `totalSessionUPL`, `accountIM`, `accountMM`, `experienceBalance`, `perpUPL`, `accountMMRate`, `accountIMRate`.
+
+### Total Members Assets (`/v5/asset/total-members-assets`)
+- Returns aggregated total assets overview for parent and sub accounts.
+- If `coin` is specified, total assets are denominated in that coin.
+- Supports parent-sub account query; if `parentUid` exists, uses the parent account UID.
+
 ## Enums
 
-* **accountType**: `UNIFIED` | `FUND`
+* **accountType**: `UNIFIED` | `FUND` | `SPOT` | `CONTRACT` | `INVESTMENT` | `OPTION`
 * **collateralSwitch**: `ON` | `OFF`
 * **frozen** (sub account): `0` (unfreeze) | `1` (freeze)
 * **memberType** (sub account): `1` (normal) | `6` (custodial)

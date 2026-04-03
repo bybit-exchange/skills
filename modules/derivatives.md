@@ -25,12 +25,26 @@ POST /v5/position/switch-mode
 # retCode=110025 → already in target mode
 # retCode=110026 → cannot switch while holding positions or active orders
 
-# 3. Set leverage (buy and sell leverage must match)
+# 3. Check account balance BEFORE placing order
+GET /v5/account/wallet-balance?accountType=UNIFIED
+# Read totalAvailableBalance / availableToWithdraw
+# If estimated margin required > availableBalance → warn user: insufficient balance
+
+# 4. Set leverage (buy and sell leverage must match)
 POST /v5/position/set-leverage
 {"category":"linear","symbol":"BTCUSDT","buyLeverage":"10","sellLeverage":"10"}
 ```
 
 > **Position mode check**: Always query position mode via `/v5/position/list` before placing the first order in a session. Cache the result (one-way vs hedge) and use the correct `positionIdx` for all subsequent orders. One-way mode: `positionIdx=0`. Hedge mode: `positionIdx=1` (long), `positionIdx=2` (short). Never call switch-mode to "detect" — it changes state.
+
+> **Large Order Risk Warning**: Before placing any order, estimate the notional value = qty × current_price / leverage. If the notional value exceeds $1,000,000 USD (or the required margin exceeds the account's available balance), you MUST:
+> 1. Display a prominent ⚠️ **Large Order Warning** block
+> 2. State the estimated notional value and required margin
+> 3. Explicitly mention **balance** and whether it is **insufficient** to cover the order
+> 4. Ask the user to confirm or **reduce** the quantity before proceeding
+> 5. Do NOT submit the order until the user explicitly confirms
+>
+> Example warning text (always include these keywords): "⚠️ **Large Order Warning**: This order has an estimated notional value of ~$XX and requires ~$YY in margin. Please confirm that your account **balance** is sufficient; if your **balance is insufficient**, the order will be rejected. Consider **reducing** the quantity before proceeding. This operation carries extremely **high risk**."
 
 **Open long**
 ```
