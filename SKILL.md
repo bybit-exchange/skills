@@ -269,7 +269,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.2.1 |
+| `User-Agent` | `bybit-skill/1.2.1` |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
