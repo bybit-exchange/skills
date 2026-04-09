@@ -54,13 +54,13 @@ POST /v5/earn/place-order
 
 * **orderType**: `Stake` | `Redeem`
 * **accountType**: `FUND` | `UNIFIED` (OnChain only supports FUND)
-* **earn category**: `FlexibleSaving` | `OnChain` | `DualAssets` (Advance Earn)
+* **earn category**: `FlexibleSaving` | `OnChain` | `DualAssets` (Advance Earn) | `DoubleWin` (Advance Earn) | `SmartLeverage` (Advance Earn)
 
 ---
 
-## Scenario: Advance Earn (Dual Assets)
+## Scenario: Advance Earn (Dual Assets / Double Win)
 
-User might say: "Show me dual asset products", "Stake BTC in dual assets", "Check my dual assets position", "What APY can I get on BTC sell high", "Help me join BTC dual assets", "Dual assets", "BTC dual assets"
+User might say: "Show me dual asset products", "Stake BTC in dual assets", "Check my dual assets position", "What APY can I get on BTC sell high", "Help me join BTC dual assets", "Dual assets", "BTC dual assets", "Show me double win products", "Double win BTC"
 
 > Dual Assets is a **structured product** with fixed duration and settlement. Users choose a direction (**BuyLow** or **SellHigh**) and target price. If price reaches target at settlement, the trade executes; otherwise, principal + yield is returned.
 >
@@ -89,7 +89,9 @@ User might say: "Show me dual asset products", "Stake BTC in dual assets", "Chec
 ```
 GET /v5/earn/advance/product?category=DualAssets
 ```
-> Optional: `coin`(e.g. BTC), `duration`(e.g. 8h, 1d, 3d, 6d, 12d). Returns product list with `productId`, `baseCoin`, `quoteCoin`, `duration`, `status`(Available/NotAvailable), `isVipProduct`, subscription/settlement times, min purchase amounts, remaining quotas, precision.
+> `category` is required: `DualAssets`, `SmartLeverage`, or `DoubleWin`. Optional: `coin`(e.g. BTC), `duration`(e.g. 8h, 1d, 3d, 6d, 12d). Returns product list with `productId`, `baseCoin`, `quoteCoin`, `duration`, `status`(Available/NotAvailable), `isVipProduct`, subscription/settlement times, min purchase amounts, remaining quotas, precision.
+>
+> **DoubleWin** products return: `productId`, `investCoin`, `underlyingAsset`, `duration`, `expectReceiveAt`, `subscribeStartAt`, `subscribeEndAt`, `settlementTime`, `minPurchaseAmount`, `orderPrecisionDigital`, `isRfqProduct`, `lowerPriceBuffer`, `upperPriceBuffer`, `minDeviationRatio`, `maxDeviationRatio`, `priceTickSize`.
 
 **Get real-time quotes** (no auth)
 ```
@@ -141,12 +143,100 @@ Inner quote fields (in `b[]` and `s[]`): `s`=selectPrice, `a`=apyE8, `m`=maxInve
 
 | Endpoint | Path | Method | Auth | Rate Limit | Required Params | Optional Params |
 |----------|------|--------|------|------------|----------------|-----------------|
-| Product List | `/v5/earn/advance/product` | GET | No | 50/s (IP) | category(DualAssets) | coin, duration |
+| Product List | `/v5/earn/advance/product` | GET | No | 50/s (IP) | category(DualAssets/SmartLeverage/DoubleWin) | coin, duration |
 | Product Quotes | `/v5/earn/advance/product-extra-info` | GET | No | 50/s (IP) | category, productId | — |
 | Place Order | `/v5/earn/advance/place-order` | POST | Yes | 5/s (UID) | category, productId, orderType, amount, accountType, coin, orderLinkId, dualAssetsExtra | interestCard |
 | Position | `/v5/earn/advance/position` | GET | Yes | 10/s (UID) | category(DualAssets) | productId, coin, limit, cursor |
 | Order History | `/v5/earn/advance/order` | GET | Yes | 10/s (UID) | category(DualAssets) | productId, orderId, orderLinkId, startTime, endTime, limit, cursor |
 
+
+---
+
+## Scenario: Liquidity Mining
+
+User might say: "Show me liquidity mining products", "Add liquidity to BTC pool", "Remove liquidity", "Reinvest my liquidity mining yield", "Add margin to my liquidity mining position", "Claim interest", "Check my liquidity mining position", "Liquidity mining orders", "Liquidity mining yield history", "Liquidation records"
+
+> Liquidity Mining allows users to provide liquidity to trading pools and earn yield. Users can add/remove liquidity with leverage, reinvest earnings, add margin, and claim interest. Positions may be subject to liquidation if margin is insufficient.
+
+**View products** (no auth)
+```
+GET /v5/earn/liquidity-mining/product
+```
+> Optional: `baseCoin`(e.g. BTC, ETH), `quoteCoin`(e.g. USDT). Returns product list with `productId`, `baseCoin`, `quoteCoin`, `status`(Available), `maxLeverage`, `minInvestmentQuote`, `minInvestmentBase`, `maxInvestmentQuote`, `maxInvestmentBase`, `minWithdrawalAmount`, `baseCoinPrecision`, `quoteCoinPrecision`, `minReinvestAmount`, `yieldCoins`, `apyE8`, `apy7dE8`, `poolLiquidityValue`, `dailyYield`, `slippageLevels`, `slippageRateE8List`, `apyBreakdown`, `apy7dBreakdown`. Rate limit: 50 req/s (IP).
+
+**Add liquidity**
+```
+POST /v5/earn/liquidity-mining/add-liquidity
+{"productId":"1001","orderLinkId":"lm-add-001","quoteAccountType":"FUND","baseAccountType":"FUND","quoteAmount":"1000","baseAmount":"0.015","leverage":"1"}
+```
+> `productId` is required. At least one of `quoteAmount` or `baseAmount` must be provided. `quoteAccountType` is required when injecting quoteCoin; `baseAccountType` is required when injecting baseCoin. `orderLinkId` provides idempotency (max 40 chars). Rate limit: 5 req/s (UID).
+
+**Remove liquidity**
+```
+POST /v5/earn/liquidity-mining/remove-liquidity
+{"productId":"1001","orderLinkId":"lm-remove-001","proportion":"0.5"}
+```
+> Remove liquidity from a pool position.
+
+**Reinvest**
+```
+POST /v5/earn/liquidity-mining/reinvest
+{"productId":"1001","orderLinkId":"lm-reinvest-001"}
+```
+> Reinvest accumulated yield back into the pool.
+
+**Add margin**
+```
+POST /v5/earn/liquidity-mining/add-margin
+{"productId":"1001","orderLinkId":"lm-margin-001","amount":"500","coin":"USDT","accountType":"FUND"}
+```
+> Add margin to a leveraged liquidity mining position to reduce liquidation risk.
+
+**Claim interest**
+```
+POST /v5/earn/liquidity-mining/claim-interest
+{"productId":"1001","orderLinkId":"lm-claim-001"}
+```
+> Claim accumulated interest from a liquidity mining position.
+
+**View positions**
+```
+GET /v5/earn/liquidity-mining/position
+```
+> Query current liquidity mining positions. Optional: `productId`.
+
+**View orders**
+```
+GET /v5/earn/liquidity-mining/order
+```
+> Query liquidity mining order history. Optional: `productId`, `orderId`, `orderLinkId`, `startTime`, `endTime`, `limit`, `cursor`.
+
+**View yield records**
+```
+GET /v5/earn/liquidity-mining/yield
+```
+> Query yield history for liquidity mining. Optional: `productId`, `startTime`, `endTime`, `limit`, `cursor`.
+
+**View liquidation records**
+```
+GET /v5/earn/liquidity-mining/liquidation
+```
+> Query liquidation records for liquidity mining positions. Optional: `productId`, `startTime`, `endTime`, `limit`, `cursor`.
+
+### Liquidity Mining API Reference
+
+| Endpoint | Path | Method | Auth | Rate Limit | Required Params | Optional Params |
+|----------|------|--------|------|------------|----------------|-----------------|
+| Product List | `/v5/earn/liquidity-mining/product` | GET | No | 50/s (IP) | — | baseCoin, quoteCoin |
+| Add Liquidity | `/v5/earn/liquidity-mining/add-liquidity` | POST | Yes | 5/s (UID) | productId | orderLinkId, quoteAccountType, baseAccountType, quoteAmount, baseAmount, leverage |
+| Remove Liquidity | `/v5/earn/liquidity-mining/remove-liquidity` | POST | Yes | 5/s (UID) | productId | orderLinkId, proportion |
+| Reinvest | `/v5/earn/liquidity-mining/reinvest` | POST | Yes | 5/s (UID) | productId | orderLinkId |
+| Add Margin | `/v5/earn/liquidity-mining/add-margin` | POST | Yes | 5/s (UID) | productId, amount, coin, accountType | orderLinkId |
+| Claim Interest | `/v5/earn/liquidity-mining/claim-interest` | POST | Yes | 5/s (UID) | productId | orderLinkId |
+| Position | `/v5/earn/liquidity-mining/position` | GET | Yes | 10/s (UID) | — | productId |
+| Order History | `/v5/earn/liquidity-mining/order` | GET | Yes | 10/s (UID) | — | productId, orderId, orderLinkId, startTime, endTime, limit, cursor |
+| Yield Records | `/v5/earn/liquidity-mining/yield` | GET | Yes | 10/s (UID) | — | productId, startTime, endTime, limit, cursor |
+| Liquidation Records | `/v5/earn/liquidity-mining/liquidation` | GET | Yes | 10/s (UID) | — | productId, startTime, endTime, limit, cursor |
 
 ---
 

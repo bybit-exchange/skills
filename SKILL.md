@@ -4,7 +4,7 @@ description: Bybit AI Trading Skill — Trade on Bybit using natural language. C
 metadata:
   version: 1.2.1  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-04-03
+  updated: 2026-04-05
 license: MIT
 ---
 
@@ -269,7 +269,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.2.1 |
+| `User-Agent` | `bybit-skill/1.2.1` |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
