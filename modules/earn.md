@@ -2,225 +2,313 @@
 
 > This module is loaded on-demand by the Bybit Trading Skill. Authentication required.
 
+## Table of Contents
+
+1. [Earn Products](#scenario-earn-products) — FlexibleSaving & OnChain
+2. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin
+3. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
+4. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
+
+---
+
+## Global Rules
+
+> **Amount precision**: All `amount` values must be **truncated** (floor, not rounded) to the precision from the product (`orderPrecisionDigital`, `baseCoinPrecision`/`quoteCoinPrecision`). Validate `amount` ≥ min and ≤ max before placing orders.
+>
+> **`E8` conversion**: Fields like `apyE8`, `aprE8` = value × 10⁸. To display: divide by 10⁸ × 100. Example: `855000000` → **8.55%**. **Never show raw E8 values.**
+>
+> **`isSlippageProtected`** (SmartLeverage/DoubleWin Redeem): `true` = reject if actual amount falls below `estRedeemAmount` beyond slippage threshold; `false` (default) = execute regardless of slippage.
+
+### `accountType` by Product
+
+| Product | `accountType` |
+|---|---|
+| FlexibleSaving | `FUND`, `UNIFIED` |
+| OnChain | `FUND` only |
+| DualAssets / SmartLeverage / DoubleWin | `FUND`, `UNIFIED` |
+| Liquidity Mining | `FUND` (via `quoteAccountType`/`baseAccountType`) |
+| BYUSDT Mint → `FlexibleSaving` | Redeem → `UNIFIED` |
+
+---
+
 ## Scenario: Earn Products
 
 User might say: "Show me available earn products", "Deposit USDT", "Redeem"
 
-**View product list**
 ```
-GET /v5/earn/product?category=FlexibleSaving&coin=USDT
-```
-> Use the returned `productId` for place-order requests.
-
-**Stake**
-```
-POST /v5/earn/place-order
-{"category":"FlexibleSaving","orderType":"Stake","accountType":"UNIFIED","coin":"USDT","amount":"1000","productId":"123","orderLinkId":"unique-id-123"}
-```
-> All 7 params above are required. Get `productId` from the product list first.
-
-**View orders**
-```
-GET /v5/earn/order?category=FlexibleSaving
+GET  /v5/earn/product?category=FlexibleSaving&coin=USDT
+POST /v5/earn/place-order  {"category":"FlexibleSaving","orderType":"Stake","accountType":"UNIFIED","coin":"USDT","amount":"1000","productId":"123","orderLinkId":"unique-id-123"}
+POST /v5/earn/place-order  {"category":"FlexibleSaving","orderType":"Redeem","accountType":"UNIFIED","coin":"USDT","amount":"500","productId":"123","orderLinkId":"unique-id-456"}
+GET  /v5/earn/order?category=FlexibleSaving
+GET  /v5/earn/position?category=FlexibleSaving
+GET  /v5/earn/yield?category=FlexibleSaving&coin=USDT
+GET  /v5/earn/hourly-yield?category=FlexibleSaving
 ```
 
-**View yield history**
-```
-GET /v5/earn/yield?category=FlexibleSaving&coin=USDT
-```
+> Place Order requires all 7 params. Get `productId` from product list first. **OnChain** uses identical flow — replace `category` with `OnChain`, `accountType` must be `FUND`. On-chain transactions may have waiting times.
 
-**Redeem**
-```
-POST /v5/earn/place-order
-{"category":"FlexibleSaving","orderType":"Redeem","accountType":"UNIFIED","coin":"USDT","amount":"500","productId":"123","orderLinkId":"unique-id-456"}
-```
-
----
-
-## API Reference
-
-### Earn (authentication required)
-
-| Endpoint | Path | Method | Required Params | Optional Params |
-|----------|------|--------|----------------|-----------------|
+| Endpoint | Path | Method | Required | Optional |
+|----------|------|--------|----------|----------|
 | Product | `/v5/earn/product` | GET | category | coin |
 | Place Order | `/v5/earn/place-order` | POST | category, orderType, accountType, coin, amount, productId, orderLinkId | redeemPositionId, toAccountType |
-| Query Order | `/v5/earn/order` | GET | category | orderId, orderLinkId, productId, startTime, endTime, limit, cursor |
+| Order | `/v5/earn/order` | GET | category | orderId, orderLinkId, productId, startTime, endTime, limit, cursor |
 | Position | `/v5/earn/position` | GET | category | productId, coin |
 | Yield | `/v5/earn/yield` | GET | category | productId, startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/hourly-yield` | GET | category | productId, startTime, endTime, limit, cursor |
 
-## Enums
-
-* **orderType**: `Stake` | `Redeem`
-* **accountType**: `FUND` | `UNIFIED` (OnChain only supports FUND)
-* **earn category**: `FlexibleSaving` | `OnChain` | `DualAssets` (Advance Earn)
+**Enums**: orderType: `Stake`|`Redeem` · category: `FlexibleSaving`|`OnChain`|`DualAssets`|`SmartLeverage`|`DoubleWin`
 
 ---
 
-## Scenario: Advance Earn (Dual Assets)
+## Scenario: Advance Earn
 
-User might say: "Show me dual asset products", "Stake BTC in dual assets", "Check my dual assets position", "What APY can I get on BTC sell high", "Help me join BTC dual assets", "Dual assets", "BTC dual assets"
+User might say: "dual assets", "smart leverage", "double win", "future boost", "leveraged position"
 
-> Dual Assets is a **structured product** with fixed duration and settlement. Users choose a direction (**BuyLow** or **SellHigh**) and target price. If price reaches target at settlement, the trade executes; otherwise, principal + yield is returned.
->
-> **⚠️ Direction selection is required**:
-> - **BuyLow**: Invest USDT; if BTC price is below the strike price at expiry, BTC is purchased at the strike price. Suitable for users who want to buy BTC at a lower price.
-> - **SellHigh**: Invest BTC; if BTC price is above the strike price at expiry, BTC is sold at the strike price. Suitable for users who want to sell BTC at a higher price.
->
-> When the user has not specified a direction, **you must first ask the user to choose BuyLow or SellHigh** before proceeding with the remaining flow.
->
-> **⚠️ Quote Expiry Warning**: Quotes expire quickly — always get fresh quotes immediately before placing orders. Never use cached or previously retrieved quotes. Each quote has an `expiredAt` field (expiration time) — **always check `expiredAt` before using any quote**, and always inform the user of the quote's expiration time so they are aware of the time sensitivity.
+> All Advance Earn products share the same base endpoints with `category` parameter.
 
-**⚠️ Mandatory pre-order flow**
-
-> When a user requests to place a Dual Assets order (BuyLow or SellHigh), you **must** follow this sequence and **must mention quote expiry (`expiredAt` / expiration time) to the user**:
->
-> 1. **Ask for direction**: If the user has not specified `BuyLow` or `SellHigh` (direction), ask them to choose before proceeding.
-> 2. Call `GET /v5/earn/advance/product?category=DualAssets` to find the matching `productId`
-> 3. Call `GET /v5/earn/advance/product-extra-info?category=DualAssets&productId=<id>` to get **real-time quotes**
-> 4. **⚠️ Check `expiredAt` (quote expiration time)**: Check each quote's `expiredAt` field — **only use a quote whose `expiredAt` has not passed**. Tell the user: "Quotes have an expiration time limit. Each quote has an `expiredAt` expiration time — please confirm your order before the quote expires." Always inform the user of the `expiredAt` (expiration time) of the selected quote so they know how long the quote is valid.
-> 5. Extract `selectPrice` and `apyE8` from the chosen quote and include them in the place-order request
-> 6. Place the order via `POST /v5/earn/advance/place-order`
->
-> **Never skip steps 3–4.** Stale quotes (past `expiredAt`) will be rejected by the API. The `expiredAt` expiration time must always be communicated to the user.
-
-**View products** (no auth)
+**View positions / orders** (all categories)
 ```
-GET /v5/earn/advance/product?category=DualAssets
+GET /v5/earn/advance/position?category=DualAssets
+GET /v5/earn/advance/order?category=SmartLeverage
 ```
-> Optional: `coin`(e.g. BTC), `duration`(e.g. 8h, 1d, 3d, 6d, 12d). Returns product list with `productId`, `baseCoin`, `quoteCoin`, `duration`, `status`(Available/NotAvailable), `isVipProduct`, subscription/settlement times, min purchase amounts, remaining quotas, precision.
+> Required: `category`. Optional: `productId`, `coin`, `orderId`, `orderLinkId`, `startTime`, `endTime`, `limit`(1-20), `cursor`. Order status: `Pending` → `Success` → `Settled` or `Fail`.
 
-**Get real-time quotes** (no auth)
+### Dual Assets
+
+> Structured product with fixed duration. User chooses **BuyLow** (invest USDT, buy BTC if price drops to target) or **SellHigh** (invest BTC, sell if price rises to target). If not reached, principal + yield returned.
+
+**⚠️ Mandatory flow**
+
+> 1. **Ask direction** if not specified — BuyLow or SellHigh
+> 2. `GET /v5/earn/advance/product?category=DualAssets` → find `productId`
+> 3. `GET /v5/earn/advance/product-extra-info?category=DualAssets&productId=<id>` → get quotes
+> 4. **Check `expiredAt`** — only use non-expired quotes. **Always tell user the expiration time.**
+> 5. **Confirm with user** before placing: direction, coin & amount, strike price (`selectPrice`), APY, `expiredAt`. **Do not place until user confirms.**
+> 6. `POST /v5/earn/advance/place-order`
+
+```
+GET /v5/earn/advance/product?category=DualAssets&coin=BTC
+```
+> Returns: `productId`, `baseCoin`, `quoteCoin`, `duration`, `status`, `isVipProduct`, `expectReceiveAt`, `subscribeStartAt`/`EndAt`, `applyStartAt`, `settlementTime`, `minPurchaseQuoteAmount`/`BaseAmount`, `remainingAmountQuote`/`Base`, `orderPrecisionDigitalQuote`/`Base`.
+
 ```
 GET /v5/earn/advance/product-extra-info?category=DualAssets&productId=81749
 ```
-> Returns `currentPrice`, `buyLowPrice[]` and `sellHighPrice[]` arrays. Each quote has: `selectPrice`, `apyE8`, `maxInvestmentAmount`, `expiredAt` (quote expiration time). **⚠️ Quotes expire quickly** — check `expiredAt` before using any quote. If a quote's `expiredAt` is in the past, it is stale and must not be used. **Always inform the user of the quote's `expiredAt` (expiration time)** so they know how long the quote is valid and can confirm the order before it expires. **Tip**: Use WebSocket `earn.dualassets.offers` on `wss://stream.bybit.com/v5/public/fp` for real-time updates instead of polling.
+> Returns `currentPrice`, `buyLowPrice[]`, `sellHighPrice[]`. Each quote: `selectPrice`, `apyE8`, `maxInvestmentAmount`, `expiredAt`. **Tip**: WebSocket `earn.dualassets.offers` for real-time updates.
 
-**Place order**
 ```
 POST /v5/earn/advance/place-order
 {"category":"DualAssets","productId":81749,"orderType":"Stake","amount":"20","accountType":"FUND","coin":"USDT","orderLinkId":"unique-id-003","dualAssetsExtra":{"orderDirection":"BuyLow","selectPrice":"69500","apyE8":855000000}}
 ```
-> All 8 params required. `dualAssetsExtra` is a nested object with `orderDirection`(BuyLow/SellHigh), `selectPrice`, `apyE8` — **must match a valid, non-expired quote** (verify `expiredAt` before submitting). Stale quotes are rejected. `orderLinkId` provides idempotency. Order is **async** — use Get Order to track status. Rate limit: 5 req/s.
+> All 8 params required. `dualAssetsExtra`: `orderDirection`(BuyLow/SellHigh), `selectPrice`, `apyE8` — must match valid non-expired quote. BuyLow → invest USDT; SellHigh → invest BTC.
+
+### Smart Leverage (Future Boost)
+
+> Structured leveraged product. Invest USDT for Long/Short position on underlying asset (BTC, ETH). Direction and leverage are **fixed per product** (not user-selectable). P&L depends on price vs breakeven price.
+
+**⚠️ Mandatory Stake flow**
+
+> 1. `GET /v5/earn/advance/product?category=SmartLeverage` → find product (check `direction`, `leverage`, `duration`)
+> 2. `GET /v5/earn/advance/product-extra-info?category=SmartLeverage&productId=<id>` → get `breakevenPrice`, `currentPrice`, `expireAt`, `maxInvestmentAmount`
+> 3. **Check `expireAt`**. If `breakevenPrice` is empty → no valid quote, inform user.
+> 4. Place order with `smartLeverageStakeExtra` (`initialPrice` from `currentPrice`, `breakevenPrice` from quote)
 >
-> - **BuyLow**: invest quote coin (USDT), may receive base coin if price drops to target
-> - **SellHigh**: invest base coin (BTC), may receive quote coin if price rises to target
+> Server validates `initialPrice` within ±5% of actual price (error `180030`). On `180030`: re-fetch quote, inform user, retry after confirmation.
 
-**View positions**
+**⚠️ Mandatory Redeem flow**
+
+> 1. `GET /v5/earn/advance/get-redeem-est-amount-list?category=SmartLeverage&positionIds=<id>` → cached **10 min**
+> 2. Check `success=true`, place with `smartLeverageRedeemExtra` (`positionId`, `estRedeemAmount`)
+>
+> Redemption blocked within **60 min** before settlement. Top-level `amount` = original staked amount (required). `estRedeemAmount` = actual payout (may differ due to P&L) — always use value from estimation API.
+
 ```
-GET /v5/earn/advance/position?category=DualAssets
+GET /v5/earn/advance/product?category=SmartLeverage
 ```
-> Optional: `productId`, `coin`, `limit`(1-20, default 20), `cursor`. Returns: `positionId`, `direction`, `targetPrice`, `amount`, `apyE8`, `status`(Active/Redeeming), `expectReturnCoin`, `expectReturnAmount`, `yieldStartAt`, `yieldEndAt`.
+> Returns: `productId`, `investCoin`, `underlyingAsset`, `direction`(Long/Short), `leverage`, `duration`, `expectReceiveAt`, `subscribeStartAt`/`EndAt`, `settlementTime`, `minPurchaseAmount`, `remainingAmount`, `orderPrecisionDigital`.
 
-**View orders**
 ```
-GET /v5/earn/advance/order?category=DualAssets
+GET /v5/earn/advance/product-extra-info?category=SmartLeverage&productId=13009
 ```
-> Optional: `productId`, `orderId`, `orderLinkId`, `startTime`, `endTime`, `limit`(1-20), `cursor`. Order status: `Pending` → `Success` → `Settled` or `Fail`. Settlement fields (`settlementCoin`, `settlementAmount`, `settlementPrice`) only available when status=`Settled`.
+> Returns: `breakevenPrice`, `currentPrice`, `expireAt`, `maxInvestmentAmount`.
 
-### WebSocket: Real-time Dual Assets Quotes
-
-```json
-// Subscribe on wss://stream.bybit.com/v5/public/fp
-{"op": "subscribe", "args": ["earn.dualassets.offers"]}
+```
+POST /v5/earn/advance/place-order
+{"category":"SmartLeverage","productId":13009,"orderType":"Stake","amount":"100","accountType":"FUND","coin":"USDT","orderLinkId":"my-order-001","smartLeverageStakeExtra":{"initialPrice":"615.11","breakevenPrice":"662.737449"}}
 ```
 
-Push data uses compressed field names:
+```
+POST /v5/earn/advance/place-order
+{"category":"SmartLeverage","productId":13009,"orderType":"Redeem","amount":"100","accountType":"FUND","coin":"USDT","orderLinkId":"my-redeem-001","smartLeverageRedeemExtra":{"positionId":"897","estRedeemAmount":"97.50","isSlippageProtected":false}}
+```
 
-| Key | Full Name | Description |
-|-----|-----------|-------------|
-| `p` | productId | Product ID |
-| `c` | currentPrice | Market index price |
-| `b` | buyLowPrice | BuyLow quotes array |
-| `s` (outer) | sellHighPrice | SellHigh quotes array |
+### DoubleWin
 
-Inner quote fields (in `b[]` and `s[]`): `s`=selectPrice, `a`=apyE8, `m`=maxInvestmentAmount, `x`=expiredAt.
+> Structured product — profit from large price movements in **either direction**. If price moves beyond upper/lower buffer at settlement, user profits; otherwise partial principal loss.
+
+**⚠️ Mandatory Stake flow**
+
+> 1. `GET /v5/earn/advance/product?category=DoubleWin` → check `isRfqProduct`
+> 2. **Fixed-range** (`isRfqProduct=false`): `GET /v5/earn/advance/product-extra-info?category=DoubleWin&productId=<id>` → get `leverage`, `currentPrice`, `expireTime`. Or WebSocket `earn.doublewin.offers`.
+> 3. **RFQ** (`isRfqProduct=true`): `GET /v5/earn/advance/double-win-leverage?productId=<id>&initialPrice=<p>&lowerPrice=<l>&upperPrice=<u>` → get `leverage`, `expireTime`. Prices must be multiples of `priceTickSize`, `lowerPrice < initialPrice < upperPrice`. Rate limit: 1/s.
+> 4. Place order with `doubleWinStakeExtra` before `expireTime`.
+
+**⚠️ Mandatory Redeem flow**
+
+> 1. `GET /v5/earn/advance/get-redeem-est-amount-list?category=DoubleWin&positionIds=<id>` → cached **10 min**
+> 2. Place with `doubleWinRedeemExtra` (`positionId`, `estRedeemAmount`). Top-level `amount` is **not required** for DoubleWin Redeem (system uses original staked amount). `estRedeemAmount` = actual payout — always from estimation API.
+>
+> Redemption blocked within **30 min** before settlement.
+
+```
+GET /v5/earn/advance/product?category=DoubleWin
+```
+> Returns: `productId`, `investCoin`, `underlyingAsset`, `duration`, `expectReceiveAt`, `subscribeStartAt`/`EndAt`, `settlementTime`, `minPurchaseAmount`, `orderPrecisionDigital`, `isRfqProduct`, `lowerPriceBuffer`, `upperPriceBuffer`, `minDeviationRatio`, `maxDeviationRatio`, `priceTickSize`.
+
+```
+POST /v5/earn/advance/place-order
+{"category":"DoubleWin","productId":12345,"orderType":"Stake","amount":"1000","accountType":"FUND","coin":"USDT","orderLinkId":"dw-stake-001","doubleWinStakeExtra":{"leverage":"2.5","initialPrice":"67890.50"}}
+```
+> `doubleWinStakeExtra`: `leverage` (≤ quote value), `initialPrice` (from `currentPrice`). RFQ products additionally need `lowerPrice`, `upperPrice`.
+
+```
+POST /v5/earn/advance/place-order
+{"category":"DoubleWin","productId":12345,"orderType":"Redeem","accountType":"FUND","coin":"USDT","orderLinkId":"dw-redeem-001","doubleWinRedeemExtra":{"positionId":"20456","estRedeemAmount":"980.50","isSlippageProtected":false}}
+```
+
+### Redeem Estimation (SmartLeverage / DoubleWin shared)
+
+```
+GET /v5/earn/advance/get-redeem-est-amount-list?category=SmartLeverage&positionIds=897,898
+```
+> Max 5 position IDs (comma-separated). Returns per-position: `success`, `positionId`, `estRedeemAmount`, `estRedeemTime`, `slippageRate`. **Must call before any Redeem order.**
+
+### WebSocket: Real-time Quotes
+
+All on `wss://stream.bybit.com/v5/public/fp`. Subscribe: `{"op":"subscribe","args":["<topic>"]}`
+
+**`earn.dualassets.offers`** — `p`=productId, `c`=currentPrice, `b`=buyLowPrice[], `s`=sellHighPrice[]. Inner: `s`=selectPrice, `a`=apyE8, `m`=maxInvestmentAmount, `x`=expiredAt.
+
+**`earn.smartleverage.offers`** — `p`=productId, `c`=currentPrice (→`initialPrice`), `b`=breakevenPrice (→`breakevenPrice`), `e`=expireAt, `m`=maxInvestmentAmount. Empty `b` = no valid quote.
+
+**`earn.doublewin.offers`** (fixed-range only) — `p`=productId, `c`=currentPrice (→`initialPrice`), `l`=leverage, `m`=maxInvestmentAmount, `e`=expireTime. Empty `l` = no valid quote. RFQ products use `/double-win-leverage` endpoint.
 
 ### Advance Earn API Reference
 
-| Endpoint | Path | Method | Auth | Rate Limit | Required Params | Optional Params |
-|----------|------|--------|------|------------|----------------|-----------------|
-| Product List | `/v5/earn/advance/product` | GET | No | 50/s (IP) | category(DualAssets) | coin, duration |
-| Product Quotes | `/v5/earn/advance/product-extra-info` | GET | No | 50/s (IP) | category, productId | — |
-| Place Order | `/v5/earn/advance/place-order` | POST | Yes | 5/s (UID) | category, productId, orderType, amount, accountType, coin, orderLinkId, dualAssetsExtra | interestCard |
-| Position | `/v5/earn/advance/position` | GET | Yes | 10/s (UID) | category(DualAssets) | productId, coin, limit, cursor |
-| Order History | `/v5/earn/advance/order` | GET | Yes | 10/s (UID) | category(DualAssets) | productId, orderId, orderLinkId, startTime, endTime, limit, cursor |
-
+| Endpoint | Path | Method | Auth | Rate | Required | Optional |
+|----------|------|--------|------|------|----------|----------|
+| Product List | `/v5/earn/advance/product` | GET | No | 50/s | category | coin, duration |
+| Product Quotes | `/v5/earn/advance/product-extra-info` | GET | No | 50/s | category, productId | — |
+| Place Order | `/v5/earn/advance/place-order` | POST | Yes | 5/s | category, productId, orderType, amount, accountType, coin, orderLinkId + category extra | interestCard |
+| Position | `/v5/earn/advance/position` | GET | Yes | 10/s | category | productId, coin, limit, cursor |
+| Order | `/v5/earn/advance/order` | GET | Yes | 10/s | category | productId, orderId, orderLinkId, startTime, endTime, limit, cursor |
+| Redeem Est. | `/v5/earn/advance/get-redeem-est-amount-list` | GET | Yes | 10/s | category(SL/DW), positionIds | — |
+| DW Leverage | `/v5/earn/advance/double-win-leverage` | GET | Yes | 1/s | productId, initialPrice, lowerPrice, upperPrice | — |
 
 ---
 
-## Scenario: BYUSDT Token (Earn Token)
+## Scenario: Liquidity Mining
 
-User might say: "Mint BYUSDT", "Redeem BYUSDT", "Check my BYUSDT position", "What is the APR for BYUSDT", "Show BYUSDT yield history"
+User might say: "liquidity mining", "add liquidity", "remove liquidity", "claim interest", "add margin"
 
-> BYUSDT Token is an earn token product. **Mint**: Transfer USDT from your FlexibleSaving account to receive BYUSDT. **Redeem**: Return BYUSDT to receive USDT in your UNIFIED account. Orders are async — use Get Order to track status. `orderLinkId` provides idempotency (same ID always returns the same order).
+> Provide liquidity to trading pools, earn yield. Supports leverage, reinvest, add margin, claim interest.
 
-**Mint BYUSDT**
+**⚠️ Pre-order flow**: `GET /v5/earn/liquidity-mining/product` → check `status=Available`, note `maxLeverage`, min/max amounts, precision → validate user input → place order.
+
+```
+GET /v5/earn/liquidity-mining/product
+```
+> Optional: `baseCoin`, `quoteCoin`. Returns: `productId`, `baseCoin`, `quoteCoin`, `status`, `maxLeverage`, `minInvestmentQuote`/`Base`, `maxInvestmentQuote`/`Base`, `minWithdrawalAmount`, `baseCoinPrecision`, `quoteCoinPrecision`, `minReinvestAmount`, `yieldCoins`, `apyE8`, `apy7dE8`, `poolLiquidityValue`, `dailyYield`, `slippageLevels`, `slippageRateE8List`.
+
+```
+POST /v5/earn/liquidity-mining/add-liquidity
+{"productId":"1001","orderLinkId":"lm-add-001","quoteAccountType":"FUND","baseAccountType":"FUND","quoteAmount":"1000","baseAmount":"0.015","leverage":"1"}
+```
+> Required: `productId`, `orderLinkId`. At least one of `quoteAmount`/`baseAmount`. `quoteAccountType` required with `quoteAmount`; `baseAccountType` required with `baseAmount`. `orderLinkId` max 40 chars.
+
+```
+POST /v5/earn/liquidity-mining/remove-liquidity
+{"productId":"1001","orderLinkId":"lm-remove-001","positionId":"5001","removeRate":50,"removeType":"Normal"}
+```
+> Required: `productId`, `orderLinkId`, `positionId`. Optional: `removeRate`(int 1-100, 0/omitted=100%), `removeType`(`Normal`|`SingleQuoteCoin`|`SingleBaseCoin`, default `Normal`).
+
+```
+POST /v5/earn/liquidity-mining/reinvest
+{"productId":"1001","orderLinkId":"lm-reinvest-001","positionId":"5001"}
+```
+
+```
+POST /v5/earn/liquidity-mining/add-margin
+{"productId":"1001","orderLinkId":"lm-margin-001","positionId":"5001","amount":"500","quoteAccountType":"FUND"}
+```
+> All 5 params required. `amount` = quoteCoin margin only (no baseCoin support).
+
+```
+POST /v5/earn/liquidity-mining/claim-interest
+{"productId":"1001"}
+```
+> Only `productId` required (pass `"-1"` to claim all). No `positionId` needed.
+
+```
+GET /v5/earn/liquidity-mining/position
+GET /v5/earn/liquidity-mining/order
+GET /v5/earn/liquidity-mining/yield-records
+GET /v5/earn/liquidity-mining/liquidation-records
+```
+
+| Endpoint | Path | Method | Required | Optional |
+|----------|------|--------|----------|----------|
+| Product | `.../product` | GET | — | baseCoin, quoteCoin |
+| Add Liquidity | `.../add-liquidity` | POST | productId, orderLinkId, (quoteAmount or baseAmount) | quoteAccountType, baseAccountType, leverage |
+| Remove Liquidity | `.../remove-liquidity` | POST | productId, orderLinkId, positionId | removeRate, removeType |
+| Reinvest | `.../reinvest` | POST | productId, orderLinkId, positionId | — |
+| Add Margin | `.../add-margin` | POST | productId, orderLinkId, positionId, amount, quoteAccountType | — |
+| Claim Interest | `.../claim-interest` | POST | productId | — |
+| Position | `.../position` | GET | — | productId, baseCoin |
+| Order | `.../order` | GET | — | orderId, orderLinkId, productId, orderType, status, startTime, endTime, limit, cursor |
+| Yield Records | `.../yield-records` | GET | — | baseCoin, quoteCoin, startTime, endTime, limit, cursor |
+| Liquidation Records | `.../liquidation-records` | GET | — | baseCoin, quoteCoin, startTime, endTime, limit, cursor |
+
+---
+
+## Scenario: BYUSDT Token
+
+User might say: "Mint BYUSDT", "Redeem BYUSDT", "BYUSDT APR"
+
+> **Mint**: USDT from FlexibleSaving → BYUSDT. **Redeem**: BYUSDT → USDT to UNIFIED. Orders async. `orderLinkId` for idempotency.
+
 ```
 POST /v5/earn/token/place-order
 {"coin":"BYUSDT","orderLinkId":"my-mint-001","orderType":"Mint","amount":"100.00","accountType":"FlexibleSaving"}
 ```
-> All 5 params required. Deducts USDT from FlexibleSaving account.
 
-**Redeem BYUSDT**
 ```
 POST /v5/earn/token/place-order
 {"coin":"BYUSDT","orderLinkId":"my-redeem-001","orderType":"Redeem","amount":"50.00","accountType":"UNIFIED"}
 ```
-> All 5 params required. Returns USDT to UNIFIED account.
 
-**View orders**
-```
-GET /v5/earn/token/order?coin=BYUSDT
-```
-> `coin=BYUSDT` is required. Optional: `orderLinkId`, `orderId`, `orderType`(Mint/Redeem), `startTime`, `endTime`, `cursor`, `limit`(1-100, default 20).
-
-**View position**
-```
-GET /v5/earn/token/position?coin=BYUSDT
-```
-> Returns current BYUSDT holding, accrued yield, and related position info.
-
-**View product info** (no auth)
 ```
 GET /v5/earn/token/product?coin=BYUSDT
 ```
-> No auth required. Returns `productId`(integer), `coin`, `mintFeeRateE8`, `redeemFeeRateE8`, `minInvestment`, `userHolding`, `leftQuota`, `canMint`(whether the user can currently mint, based on remaining quota), `savingsBalance`(user's FlexibleSaving USDT balance), `aprE8`, `bonusAprE8`, `bonusMaxAmount`, `baseCoinPrecision`, `tokenPrecision`.
+> Returns: `productId`, `mintFeeRateE8`, `redeemFeeRateE8`, `minInvestment`, `userHolding`, `leftQuota`, `canMint`, `savingsBalance`, `aprE8`, `bonusAprE8`, `bonusMaxAmount`, `baseCoinPrecision`, `tokenPrecision`.
+>
+> **`canMint=false`**: quota exhausted (`leftQuota`), suggest retry later. **Mint prerequisite**: deducts from FlexibleSaving — check `savingsBalance` first.
 
-**View yield history**
 ```
+GET /v5/earn/token/order?coin=BYUSDT
+GET /v5/earn/token/position?coin=BYUSDT
 GET /v5/earn/token/yield?coin=BYUSDT
-```
-> Returns yield records. `hourlyDate` and `createdTime` are in **seconds** (not milliseconds).
-
-**View hourly yield**
-```
 GET /v5/earn/token/hourly-yield?coin=BYUSDT
-```
-> Returns hourly yield records. `hourlyDate` and `createdTime` are in **seconds** (not milliseconds).
-
-**View APR history**
-```
 GET /v5/earn/token/history-apr?coin=BYUSDT&range=2
 ```
-> Required: `coin`, `range`(1=7 days, 2=30 days, 3=180 days). No auth required. Returns historical APR records. `timestamp` is in **milliseconds**.
+> Yield/hourly-yield timestamps in **seconds**. APR history: `range`(1=7d, 2=30d, 3=180d), timestamps in **milliseconds**.
 
-### BYUSDT Token API Reference
-
-| Endpoint | Path | Method | Auth | Rate Limit | Required Params | Optional Params |
-|----------|------|--------|------|------------|----------------|-----------------|
-| Place Order | `/v5/earn/token/place-order` | POST | Yes | 5/s (UID) | coin, orderLinkId, orderType, amount, accountType | — |
-| Get Order List | `/v5/earn/token/order` | GET | Yes | 10/s (UID) | coin | orderLinkId, orderId, orderType, startTime, endTime, cursor, limit |
-| Get Position | `/v5/earn/token/position` | GET | Yes | 20/s (UID) | coin | — |
-| Get Product Info | `/v5/earn/token/product` | GET | No | 20/s (IP) | coin | — |
-| Get Yield History | `/v5/earn/token/yield` | GET | Yes | 10/s (UID) | coin | startTime, endTime, limit, cursor |
-| Get Hourly Yield | `/v5/earn/token/hourly-yield` | GET | Yes | 10/s (UID) | coin | startTime, endTime, limit, cursor |
-| Get APR History | `/v5/earn/token/history-apr` | GET | No | 50/s (IP) | coin, range | — |
-
-## Enums (BYUSDT Token)
-
-* **orderType**: `Mint` | `Redeem`
-* **accountType (Mint)**: `FlexibleSaving`
-* **accountType (Redeem)**: `UNIFIED`
-* **coin**: `BYUSDT`
+| Endpoint | Path | Method | Auth | Required | Optional |
+|----------|------|--------|------|----------|----------|
+| Place Order | `/v5/earn/token/place-order` | POST | Yes | coin, orderLinkId, orderType, amount, accountType | — |
+| Order List | `/v5/earn/token/order` | GET | Yes | coin | orderLinkId, orderId, orderType, startTime, endTime, cursor, limit |
+| Position | `/v5/earn/token/position` | GET | Yes | coin | — |
+| Product Info | `/v5/earn/token/product` | GET | No | coin | — |
+| Yield History | `/v5/earn/token/yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
+| Hourly Yield | `/v5/earn/token/hourly-yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
+| APR History | `/v5/earn/token/history-apr` | GET | No | coin, range | — |
