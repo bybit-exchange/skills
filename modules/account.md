@@ -70,7 +70,7 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Apply Demo Funds | `/v5/account/demo-apply-money` | POST | — | adjustType, utaDemoApplyMoney | — |
 | Option Asset Info | `/v5/account/option-asset-info` | GET | — | — | option |
 | Pay Info | `/v5/account/pay-info` | GET | — | coin | — |
-| Trade Info For Analysis | `/v5/account/trade-info-for-analysis` | GET | — | symbol, startTime, endTime | — |
+| Trade Info For Analysis | `/v5/account/trade-info-for-analysis` | GET | — | symbol | startTime, endTime |
 
 ### Asset (authentication required)
 
