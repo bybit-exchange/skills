@@ -32,6 +32,23 @@ GET /v5/execution/list?category=linear&symbol=BTCUSDT
 GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 ```
 
+**Fixed-rate borrow (borrow USDT at fixed rate for 7 days)**
+```
+POST /v5/spot-margin-trade/fixedborrow
+{"orderCurrency":"USDT","orderAmount":"1000","annualRate":"0.02","term":"7","repayType":"1","strategyType":"PARTIAL"}
+```
+
+**Query borrow liability breakdown**
+```
+GET /v5/spot-margin-trade/Liability?currency=USDT
+```
+
+**Repay with repayment type (fixed-rate liabilities only)**
+```
+POST /v5/account/repay
+{"coin":"USDT","amount":"100","repaymentType":"FIXED"}
+```
+
 ---
 
 ## API Reference
@@ -60,8 +77,8 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Trading Behavior Config | `/v5/account/user-setting-config` | GET | — | — | — |
 | Transferable Amount | `/v5/account/withdrawal` | GET | coinName | — | — |
 | Manual Borrow | `/v5/account/borrow` | POST | coin, amount | — | — |
-| Manual Repay | `/v5/account/repay` | POST | — | coin, amount | — |
-| No-Convert Repay | `/v5/account/no-convert-repay` | POST | coin | amount | — |
+| Manual Repay | `/v5/account/repay` | POST | — | coin, amount, repaymentType | — |
+| No-Convert Repay | `/v5/account/no-convert-repay` | POST | coin | amount, repaymentType | — |
 | Quick Repay | `/v5/account/quick-repayment` | POST | — | coin | — |
 | Batch Set Collateral | `/v5/account/set-collateral-switch-batch` | POST | request[] | — | — |
 | Set Spot Hedging | `/v5/account/set-hedging-mode` | POST | setHedgingMode | — | spot |
@@ -114,6 +131,17 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 | Portfolio Margin | `/v5/asset/portfolio-margin` | GET | — | baseCoin | — |
 | Total Members Assets | `/v5/asset/total-members-assets` | GET | — | coin | — |
 
+### Spot Margin Trade – Fixed-Rate Borrow (authentication required, Unified account only)
+
+| Endpoint | Path | Method | Required Params | Optional Params | Categories |
+|----------|------|--------|----------------|-----------------|------------|
+| Fixed-Rate Borrow | `/v5/spot-margin-trade/fixedborrow` | POST | orderCurrency, orderAmount, annualRate, term, repayType, strategyType | — | — |
+| Renew Fixed-Rate Borrow | `/v5/spot-margin-trade/fixedborrow-renew` | POST | loanId | qty | — |
+| Query Fixed-Rate Borrow Market | `/v5/spot-margin-trade/fixedborrow-order-quote` | GET | orderCurrency, orderBy | term, sort, limit | — |
+| Query Fixed-Rate Borrow Orders | `/v5/spot-margin-trade/fixedborrow-order-info` | GET | — | orderId, orderCurrency, state, term, limit, cursor | — |
+| Query Fixed-Rate Borrow Contracts | `/v5/spot-margin-trade/fixedborrow-contract-info` | GET | — | orderId, orderCurrency, term, limit, cursor | — |
+| Query Borrow Liability | `/v5/spot-margin-trade/Liability` | GET | currency | — | — |
+
 ### User (authentication required)
 
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
@@ -164,9 +192,61 @@ GET /v5/position/closed-pnl?category=linear&symbol=BTCUSDT
 - If `coin` is specified, total assets are denominated in that coin.
 - Supports parent-sub account query; if `parentUid` exists, uses the parent account UID.
 
+### Manual Repay (`/v5/account/repay`)
+- New optional parameter `repaymentType`: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`).
+  - `ALL`: Repay all liabilities (both fixed-rate and flexible-rate)
+  - `FIXED`: Repay fixed-rate liabilities only
+  - `FLEXIBLE`: Repay flexible-rate (variable-rate) liabilities only
+- When neither `coin` nor `amount` is provided, `repaymentType` must be `ALL`.
+
+### No-Convert Repay (`/v5/account/no-convert-repay`)
+- New optional parameter `repaymentType`: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`).
+  - `ALL`: Repay all liabilities (both fixed-rate and flexible-rate)
+  - `FIXED`: Repay fixed-rate liabilities only
+  - `FLEXIBLE`: Repay flexible-rate (variable-rate) liabilities only
+- When neither `coin` nor `amount` is provided, `repaymentType` must be `ALL`.
+
+### Quick Repay (`/v5/account/quick-repayment`)
+- Error code `182120`: Please use the repay and no-convert-repay API instead.
+
+### Fixed-Rate Borrow (`/v5/spot-margin-trade/fixedborrow`)
+- Creates a fixed-rate borrow order. Unified account only.
+- `orderCurrency`: Coin name (e.g. `USDT`, `BTC`). `orderAmount`: Borrow amount. `annualRate`: Max acceptable annual rate (e.g. `0.02`).
+- `term`: `7` | `14` | `30` | `90` | `180` (days).
+- `repayType`: `1` (auto-repay at maturity) | `2` (convert to flexible-rate loan at maturity).
+- `strategyType`: `PARTIAL` (partial fill allowed) | `FULL` (fill or kill).
+
+### Renew Fixed-Rate Borrow (`/v5/spot-margin-trade/fixedborrow-renew`)
+- Renews (extends) an existing fixed-rate borrow contract.
+- `loanId` (required): The contract ID to renew. `qty` (optional): Renewal amount; if omitted, uses full prepayment amount.
+
+### Query Fixed-Rate Borrow Market (`/v5/spot-margin-trade/fixedborrow-order-quote`)
+- Queries the fixed-rate lending supply order book.
+- `orderCurrency` (required): Coin name. `orderBy` (required): `apy` | `term` | `quantity`.
+- `sort`: `0` (ascending, default) | `1` (descending). `limit`: 1–100, default `10`.
+
+### Query Fixed-Rate Borrow Orders (`/v5/spot-margin-trade/fixedborrow-order-info`)
+- Queries fixed-rate borrow order history.
+- `state`: `1` (matching) | `2` (partially filled & cancelled) | `3` (fully filled) | `4` (cancelled).
+- Supports cursor-based pagination. `limit`: 1–100, default `10`.
+
+### Query Fixed-Rate Borrow Contracts (`/v5/spot-margin-trade/fixedborrow-contract-info`)
+- Queries matched fixed-rate loan contract details including principal, interest, and status.
+- Supports cursor-based pagination. `limit`: 1–100, default `10`.
+
+### Query Borrow Liability (`/v5/spot-margin-trade/Liability`)
+- Returns borrow liability breakdown: total, fixed-rate, flexible-rate, spot, and derivatives borrow amounts.
+- `currency` (required): Coin name (e.g. `USDT`). Unified account only.
+- Note: Path uses capital `L` in `Liability` (per BGW routing).
+
+### API Key Permissions
+- 15 permission categories: ContractTrade, Spot, Wallet, Options, Derivatives, CopyTrading, BlockTrade, Exchange, NFT, Affiliate, Earn, FiatP2P, FiatBitPay, FiatBybitPay (deprecated), FiatConvertBroker.
+- Read-Write API keys cannot add or delete FiatP2P, FiatBitPay (formerly FiatBybitPay), and FiatConvertBroker permissions.
+
 ## Enums
 
 * **accountType**: `UNIFIED` | `FUND` | `SPOT` | `CONTRACT` | `INVESTMENT` | `OPTION`
 * **collateralSwitch**: `ON` | `OFF`
 * **frozen** (sub account): `0` (unfreeze) | `1` (freeze)
 * **memberType** (sub account): `1` (normal) | `6` (custodial)
+* **repaymentType**: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`)
