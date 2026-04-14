@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.2.3  # Modular Architecture + Security Baseline
+  version: 1.2.4  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-04-10
+  updated: 2026-04-13
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ FOREGROUND (main agent — immediate):
 BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
 2. SKILL_DIR = directory where this SKILL.md is located
-3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.2.3" https://api.bybit.com/skill/manifest
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.2.4" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
@@ -37,7 +37,7 @@ BACKGROUND (sub-agent — parallel):
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
    a. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/1.2.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.2.4" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
@@ -182,11 +182,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.2.3" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.2.4" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/1.2.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.2.4" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -206,7 +206,7 @@ Tell the user what they can do. Examples:
 | buy, sell, spot, swap, exchange, convert, limit order, market order, cancel order, spot margin | **spot** | `modules/spot.md` | account |
 | long, short, leverage, futures, perpetual, close position, take profit, stop loss, trailing stop, conditional order, hedge mode, option, put, call, strike, expiry | **derivatives** | `modules/derivatives.md` | account |
 | earn, stake, redeem, yield, savings, flexible, fixed deposit, dual assets, structured product | **earn** | `modules/earn.md` | account |
-| balance, wallet, transfer, deposit, withdraw, fee, sub-account, API key, asset | **account** | `modules/account.md` | — |
+| balance, wallet, transfer, deposit, withdraw, fee, sub-account, API key, asset, fixed-rate borrow, borrow liability, repayment type, renew borrow, borrow market, borrow order, borrow contract, fixed borrow, margin borrow | **account** | `modules/account.md` | — |
 | websocket, stream, loan, borrow, repay, RFQ, block trade, spread, lending, broker, rate limit | **advanced** | `modules/advanced.md` | — |
 | P2P, peer to peer, advertisement, ad, OTC, fiat, fiat buy, fiat sell, convert fiat | **fiat** | `modules/fiat.md` | — |
 | copy trading, leader, follower, copy trade, leaderboard, recommend trader | **copy-trading** | `modules/copy-trading.md` | derivatives, account |
@@ -267,7 +267,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-SIGN` | HMAC-SHA256 signature |
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.2.3` |
+| `User-Agent` | `bybit-skill/1.2.4` |
 | `X-Referer` | `bybit-skill` |
 
 **Signature calculation:**
@@ -301,7 +301,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.2.3" \
+  -H "User-Agent: bybit-skill/1.2.4" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -317,7 +317,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.2.3" \
+  -H "User-Agent: bybit-skill/1.2.4" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
