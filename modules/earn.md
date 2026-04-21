@@ -5,9 +5,10 @@
 ## Table of Contents
 
 1. [Earn Products](#scenario-earn-products) — FlexibleSaving & OnChain
-2. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin
-3. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
-4. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
+2. [Fixed Term](#scenario-fixed-term) — FixedTermSaving / FundPool / FundPoolPremium
+3. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin / Discount Buy
+4. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
+5. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
 
 ---
 
@@ -18,6 +19,8 @@
 > **`E8` conversion**: Fields like `apyE8`, `aprE8` = value × 10⁸. To display: divide by 10⁸ × 100. Example: `855000000` → **8.55%**. **Never show raw E8 values.**
 >
 > **`isSlippageProtected`** (SmartLeverage/DoubleWin Redeem): `true` = reject if actual amount falls below `estRedeemAmount` beyond slippage threshold; `false` (default) = execute regardless of slippage.
+>
+> **`orderLinkId` uniqueness**: For Liquidity Mining and Advance Earn, once an `orderLinkId` is used, the same value **cannot be reused** — resubmission returns an error. Always generate a unique value per request.
 
 ### `accountType` by Product
 
@@ -25,7 +28,8 @@
 |---|---|
 | FlexibleSaving | `FUND`, `UNIFIED` |
 | OnChain | `FUND` only |
-| DualAssets / SmartLeverage / DoubleWin | `FUND`, `UNIFIED` |
+| FixedTermSaving / FundPool / FundPoolPremium | `FUND`, `UNIFIED` |
+| DualAssets / SmartLeverage / DoubleWin / DiscountBuy | `FUND`, `UNIFIED` |
 | Liquidity Mining | `FUND` (via `quoteAccountType`/`baseAccountType`) |
 | BYUSDT Mint → `FlexibleSaving` | Redeem → `UNIFIED` |
 
@@ -56,13 +60,57 @@ GET  /v5/earn/hourly-yield?category=FlexibleSaving
 | Yield | `/v5/earn/yield` | GET | category | productId, startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/hourly-yield` | GET | category | productId, startTime, endTime, limit, cursor |
 
-**Enums**: orderType: `Stake`|`Redeem` · category: `FlexibleSaving`|`OnChain`|`DualAssets`|`SmartLeverage`|`DoubleWin`
+**Enums**: orderType: `Stake`|`Redeem` · category: `FlexibleSaving`|`OnChain`
+
+---
+
+## Scenario: Fixed Term
+
+User might say: "fixed term savings", "fund pool", "fixed deposit", "lock USDT for 30 days", "auto reinvest", "early redeem fixed"
+
+> Fixed-duration earn products. Sub-categories: **FixedTermSaving**, **FundPool** (may allow early redemption at discounted APY), **FundPoolPremium**.
+>
+> **Tiered APY**: `tieredApyList` — APY varies by amount tier (`max: "-1"` = unlimited). **Multi-coin rewards**: `interestCoinApyList` — interest may be paid in a different coin.
+>
+> **Early redemption**: Only if `allowEarlyRedemption=true` and `redemptionLimitDuration` has passed. FundPool → `earlyRedemptionApy` (discounted); FixedTermSaving → **zero** earnings. Warn user before confirming. Normal maturity redemption is automatic.
+>
+> **Auto-reinvest**: FundPool only, if `allowAutoReinvest=true`.
+
+**⚠️ Mandatory Stake flow**: `GET product` → check `status=Available`, validate amount against min/max, truncate to `precision` → show user coin, duration, tiered APY, early redemption policy → confirm → `POST place-order`.
+
+```
+POST /v5/earn/fixed-term/place-order
+{"productId":"1001","category":"FixedTermSaving","coin":"USDT","amount":"1000","accountType":"FUND","orderLinkId":"ft-stake-001"}
+```
+
+```
+POST /v5/earn/fixed-term/redeem
+{"productId":"1002","category":"FundPool","positionId":"88001"}
+```
+
+```
+POST /v5/earn/fixed-term/position/auto-invest
+{"productId":"1002","category":"FundPool","positionId":"88001","status":"Enable"}
+```
+
+| Endpoint | Path | Method | Auth | Rate | Required | Optional |
+|----------|------|--------|------|------|----------|----------|
+| Product List | `/v5/earn/fixed-term/product` | GET | No | 50/s | — | coin |
+| Place Order | `/v5/earn/fixed-term/place-order` | POST | Yes | 5/s | productId, category, coin, amount, accountType, orderLinkId | autoInvest (FundPool only) |
+| Redeem | `/v5/earn/fixed-term/redeem` | POST | Yes | 5/s | productId, category, positionId | — |
+| Set Auto-Invest | `/v5/earn/fixed-term/position/auto-invest` | POST | Yes | 5/s | productId, category, positionId, status | — |
+| Position | `/v5/earn/fixed-term/position` | GET | Yes | 10/s | — | productId, category, coin |
+| Order | `/v5/earn/fixed-term/order` | GET | Yes | 10/s | — | orderType, productId, category, orderId, startTime, endTime, limit, cursor |
+
+> **`status` enum** (auto-invest): `Enable` \| `Disable` (string — **not a boolean**). When `productId` is passed to `order` history, `category` must also be supplied.
+
+**Enums**: category: `FixedTermSaving`|`FundPool`|`FundPoolPremium` · status: `Available`|`SoldOut`|`NotStarted` · orderType: `Stake`|`Redeem`|`Reinvest` · accountType: `FUND`|`UNIFIED`
 
 ---
 
 ## Scenario: Advance Earn
 
-User might say: "dual assets", "smart leverage", "double win", "future boost", "leveraged position"
+User might say: "dual assets", "smart leverage", "double win", "future boost", "leveraged position", "discount buy"
 
 > All Advance Earn products share the same base endpoints with `category` parameter.
 
@@ -176,6 +224,29 @@ POST /v5/earn/advance/place-order
 {"category":"DoubleWin","productId":12345,"orderType":"Redeem","accountType":"FUND","coin":"USDT","orderLinkId":"dw-redeem-001","doubleWinRedeemExtra":{"positionId":"20456","estRedeemAmount":"980.50","isSlippageProtected":false}}
 ```
 
+### Discount Buy
+
+> Structured **knockout-barrier** product. User stakes USDT with two price levels:
+> - **Knocked out** (settlement price ≥ `knockoutPrice`): receive USDT principal + coupon (`knockoutCouponE8` annualized × durationDays / 365).
+> - **Exercised** (settlement price < `knockoutPrice`): receive underlying asset at `purchasePrice` (`settleType=Base`) or equivalent USDT (`settleType=Quote`).
+>
+> `duration` filter not applicable (ignored). Only `Stake` supported — no pre-settlement redemption.
+
+**⚠️ Mandatory flow**: `GET product` → `GET product-extra-info` for quotes (returns `currentPrice`, `purchasePrice`, `knockoutPrice`, `knockoutCouponE8`, `maxInvestmentAmount`, `instUid`, `expiredAt`) → check `expiredAt` (only use non-expired, **tell user expiry**) → confirm underlying asset, amount, purchase price, knockout price, coupon, settlement preference → `POST place-order` with `discountBuyExtra`.
+
+```
+POST /v5/earn/advance/place-order
+{"category":"DiscountBuy","productId":54321,"orderType":"Stake","amount":"100","accountType":"FUND","coin":"USDT","orderLinkId":"db-stake-001","discountBuyExtra":{"initialPrice":"67890.50","purchasePrice":"65000.00","knockoutPrice":"72000.00","knockoutCouponE8":200000000,"instUid":1001,"settleType":"Base"}}
+```
+
+> `discountBuyExtra` — all 6 required. Pass values **as-is** from `product-extra-info`:
+> - `initialPrice` — spot at order time (from `currentPrice`), max 8 decimals, used for slippage protection
+> - `purchasePrice` — strike (from quote)
+> - `knockoutPrice` — knockout barrier (from quote); must be strictly greater than `purchasePrice`
+> - `knockoutCouponE8` — coupon annualized × 10⁸ (from quote), integer
+> - `instUid` — market maker UID (from quote), integer
+> - `settleType` — `Base` (receive underlying) \| `Quote` (receive USDT); only applies when exercised
+
 ### Redeem Estimation (SmartLeverage / DoubleWin shared)
 
 ```
@@ -197,13 +268,15 @@ All on `wss://stream.bybit.com/v5/public/fp`. Subscribe: `{"op":"subscribe","arg
 
 | Endpoint | Path | Method | Auth | Rate | Required | Optional |
 |----------|------|--------|------|------|----------|----------|
-| Product List | `/v5/earn/advance/product` | GET | No | 50/s | category | coin, duration |
-| Product Quotes | `/v5/earn/advance/product-extra-info` | GET | No | 50/s | category, productId | — |
-| Place Order | `/v5/earn/advance/place-order` | POST | Yes | 5/s | category, productId, orderType, amount, accountType, coin, orderLinkId + category extra | interestCard |
+| Product List | `/v5/earn/advance/product` | GET | No | 50/s | category | coin, duration (not for DiscountBuy) |
+| Product Quotes | `/v5/earn/advance/product-extra-info` | GET | No | 50/s | category, productId (DualAssets) | productId (other categories) |
+| Place Order | `/v5/earn/advance/place-order` | POST | Yes | 5/s | category, productId, orderType, amount, accountType, coin, orderLinkId + category extra | interestCard (not for DiscountBuy) |
 | Position | `/v5/earn/advance/position` | GET | Yes | 10/s | category | productId, coin, limit, cursor |
 | Order | `/v5/earn/advance/order` | GET | Yes | 10/s | category | productId, orderId, orderLinkId, startTime, endTime, limit, cursor |
 | Redeem Est. | `/v5/earn/advance/get-redeem-est-amount-list` | GET | Yes | 10/s | category(SL/DW), positionIds | — |
 | DW Leverage | `/v5/earn/advance/double-win-leverage` | GET | Yes | 1/s | productId, initialPrice, lowerPrice, upperPrice | — |
+
+**category enum**: `DualAssets`|`SmartLeverage`|`DoubleWin`|`DiscountBuy`
 
 ---
 
@@ -255,6 +328,8 @@ GET /v5/earn/liquidity-mining/order
 GET /v5/earn/liquidity-mining/yield-records
 GET /v5/earn/liquidity-mining/liquidation-records
 ```
+
+> **Order endpoint behavior**: Pass `orderId` or `orderLinkId` alone to retrieve a single order (`Pending` orders visible). Without `orderId`/`orderLinkId`, returns a paginated list (`Pending` excluded; `Success`, `Processing`, and `Fail` orders are all included). `status` filter supports `Success`|`Processing` only — `Fail` orders are returned by default but passing `status=Fail` returns error `180001`.
 
 | Endpoint | Path | Method | Required | Optional |
 |----------|------|--------|----------|----------|

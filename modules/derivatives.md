@@ -71,6 +71,7 @@ POST /v5/order/create
 ```
 GET /v5/position/list?category=linear&symbol=BTCUSDT
 ```
+> `openTime`: first open time of the current position (ms). Default: `0`.
 
 **Close position (recommended: query size first, then close)**
 ```bash
