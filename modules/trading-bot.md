@@ -112,11 +112,6 @@ Rate limit: 10 qps per UID. **Note: This is POST, not GET** — pass `grid_id` i
 
 **Response** includes: symbol, price range, investment, profit metrics (total_profit, grid_profit, total_apr), arbitrage_num, status, TP/SL settings, trailing config, close_reason.
 
-**Response enum fields** now use string constants:
-
-- `close_code` (GridBotCloseCode): `BOT_CLOSE_CODE_UNSPECIFIED` | `BOT_CLOSE_CODE_FAILED_INITIATION` | `BOT_CLOSE_CODE_CANCELED_MANUALLY` | `BOT_CLOSE_CODE_CANCELED_AUTO` | `BOT_CLOSE_CODE_CANCELED_AUTO_TP` | `BOT_CLOSE_CODE_CANCELED_AUTO_SL` | `BOT_CLOSE_CODE_CANCELED_TRAILING_STOP`
-- `account_type` (AccountType): `BOT_ACCOUNT_TYPE_UNSPECIFIED` | `BOT_ACCOUNT_TYPE_DERIVATIVE` | `BOT_ACCOUNT_TYPE_UNIFIED` | `BOT_ACCOUNT_TYPE_UNIFIED_UPGRADING` | `BOT_ACCOUNT_TYPE_SPOT` | `BOT_ACCOUNT_TYPE_UTA` | `BOT_ACCOUNT_TYPE_FUND`
-
 ### Grid Status
 
 `RAW` -> `NEW` -> `INITIALIZING` -> `RUNNING` -> `CANCELLING` -> `COMPLETED`. Also: `REJECTED`.
@@ -224,25 +219,18 @@ Rate limit: 10 qps per UID. **Note: This is POST, not GET.**
 
 **Response** includes: symbol, price range, grid config, leverage, PnL metrics (realized, unrealized, total), arbitrage count, APR, funding fees, liquidation price, status, stop reason.
 
-**Response enum fields** now use string constants:
-
-- `status` (FutureGridStatus): `FUTURE_GRID_STATUS_UNSPECIFIED` | `FUTURE_GRID_STATUS_REJECTED` | `FUTURE_GRID_STATUS_NEW` | `FUTURE_GRID_STATUS_INITIALIZING` | `FUTURE_GRID_STATUS_RUNNING` | `FUTURE_GRID_STATUS_CANCELLING` | `FUTURE_GRID_STATUS_COMPLETED` | `FUTURE_GRID_STATUS_AWAIT_ACTIVATION`
-- `grid_type` (FutureGridType): `FUTURE_GRID_TYPE_UNSPECIFIED` | `FUTURE_GRID_TYPE_ARITHMETIC` | `FUTURE_GRID_TYPE_GEOMETRIC`
-- `grid_mode` (FutureGridMode): `FUTURE_GRID_MODE_UNSPECIFIED` | `FUTURE_GRID_MODE_NEUTRAL` | `FUTURE_GRID_MODE_LONG` | `FUTURE_GRID_MODE_SHORT`
-- `tp_sl_type` (TpSlType): `TP_SL_TYPE_UNSPECIFIED` | `TP_SL_TYPE_PERCENT` | `TP_SL_TYPE_PRICE` | `TP_SL_TYPE_TP_PRICE_SL_PERCENT` | `TP_SL_TYPE_TP_PERCENT_SL_PRICE`
-
 ### Futures Grid Status Codes
 
 | Code | Status |
 |------|--------|
-| FUTURE_GRID_STATUS_UNSPECIFIED | Unspecified |
-| FUTURE_GRID_STATUS_REJECTED | Rejected |
-| FUTURE_GRID_STATUS_NEW | New |
-| FUTURE_GRID_STATUS_INITIALIZING | Initializing |
-| FUTURE_GRID_STATUS_RUNNING | Running |
-| FUTURE_GRID_STATUS_CANCELLING | Cancelling |
-| FUTURE_GRID_STATUS_COMPLETED | Completed |
-| FUTURE_GRID_STATUS_AWAIT_ACTIVATION | Await activation |
+| 0 | Unspecified |
+| 1 | Rejected |
+| 2 | New |
+| 3 | Initializing |
+| 4 | Running |
+| 5 | Cancelling |
+| 6 | Completed |
+| 7 | Await activation |
 
 ---
 
@@ -261,7 +249,7 @@ Rate limit: 100 qps per IP. **Note: This is POST, not GET.**
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | symbol | string | Y | e.g. `BTCUSDT` |
-| martingale_mode | string | Y | `F_MART_MODE_MARTINGALE_MODE_LONG` (buys dip), `F_MART_MODE_MARTINGALE_MODE_SHORT` (sells rally) |
+| martingale_mode | integer | Y | `1` long (buys dip), `2` short (sells rally) |
 | leverage | string | Y | Leverage multiplier |
 | price_float_percent | string | N | Price drop/rise % to trigger add-position |
 | add_position_percent | string | N | Position increase ratio per add |
@@ -284,14 +272,14 @@ Rate limit: 10 qps per UID.
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | symbol | string | Y | e.g. `BTCUSDT` |
-| martingale_mode | string | Y | `F_MART_MODE_MARTINGALE_MODE_LONG` (buys dip), `F_MART_MODE_MARTINGALE_MODE_SHORT` (sells rally) |
+| martingale_mode | integer | Y | `1` long (buys dip), `2` short (sells rally) |
 | leverage | string | Y | Leverage multiplier |
 | price_float_percent | string | Y | Price drop/rise % to trigger add-position |
 | add_position_percent | string | Y | Position increase ratio per add |
 | add_position_num | integer | Y | Max number of add-position orders |
 | init_margin | string | Y | Initial margin amount |
 | round_tp_percent | string | Y | Round take-profit percentage |
-| auto_cycle_toggle | string | N | `AUTO_CYCLE_TOGGLE_AUTO_CYCLE_TOGGLE_ENABLE` enabled, `AUTO_CYCLE_TOGGLE_AUTO_CYCLE_TOGGLE_DISABLE` disabled. Auto-restart after TP |
+| auto_cycle_toggle | integer | N | `1` enabled, `2` disabled. Auto-restart after TP |
 | sl_percent | string | N | Stop-loss percentage |
 | entry_price | string | N | Entry trigger price |
 
@@ -308,9 +296,7 @@ Rate limit: 10 qps per UID.
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | bot_id | integer | Y | Bot ID to close |
-| stop_type | string | N | Close reason code. e.g. `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_USER` = user stopped |
-
-**Stop type values**: `F_MART_BOT_STOP_TYPE_STOP_TYPE_UNKNOWN_UNSPECIFIED` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_INIT_ERROR` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_USER` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_LIQ` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_SYMBOL_OFFLINE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_SL` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_SYSTEM` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_USER_BANNED` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_TP_SINGLE_ROUND` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_ORDER_COST` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_REDUCE_ONLY` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_BUST_PRICE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_NEGATIVE_ARBITRAGE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_COMPLIANCE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_ADL`
+| stop_type | integer | N | Close reason code (e.g. `2` = user stopped) |
 
 ### Get Detail
 
@@ -325,13 +311,6 @@ Rate limit: 10 qps per UID. **Note: This is POST, not GET.**
 | bot_id | integer | Y | Bot ID |
 
 **Response** includes: symbol, mode, leverage, config params, PnL (realized/unrealized/total), position info, round progress, margin balances, timestamps.
-
-**Response enum fields** now use string constants:
-
-- `martingale_mode` (FMartMode): `F_MART_MODE_MARTINGALE_MODE_UNKNOWN_UNSPECIFIED` | `F_MART_MODE_MARTINGALE_MODE_LONG` | `F_MART_MODE_MARTINGALE_MODE_SHORT`
-- `display_status` (FMartBotDisplayStatus): `F_MART_BOT_DISPLAY_STATUS_UNKNOWN_UNSPECIFIED` | `F_MART_BOT_DISPLAY_STATUS_INITIALIZING` | `F_MART_BOT_DISPLAY_STATUS_AWAIT_ACTIVATION` | `F_MART_BOT_DISPLAY_STATUS_RUNNING` | `F_MART_BOT_DISPLAY_STATUS_CANCELLING` | `F_MART_BOT_DISPLAY_STATUS_COMPLETED`
-- `stop_type` (FMartBotStopType): `F_MART_BOT_STOP_TYPE_STOP_TYPE_UNKNOWN_UNSPECIFIED` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_INIT_ERROR` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_USER` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_LIQ` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_SYMBOL_OFFLINE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_SL` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_SYSTEM` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_USER_BANNED` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_TP_SINGLE_ROUND` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_ORDER_COST` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_REDUCE_ONLY` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_BUST_PRICE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_NEGATIVE_ARBITRAGE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_COMPLIANCE` | `F_MART_BOT_STOP_TYPE_STOP_TYPE_BY_ADL`
-- `auto_cycle_toggle` (AutoCycleToggle): `AUTO_CYCLE_TOGGLE_AUTO_CYCLE_TOGGLE_UNKNOWN_UNSPECIFIED` | `AUTO_CYCLE_TOGGLE_AUTO_CYCLE_TOGGLE_ENABLE` | `AUTO_CYCLE_TOGGLE_AUTO_CYCLE_TOGGLE_DISABLE`
 
 ---
 
@@ -419,7 +398,7 @@ Rate limit: 10 qps per UID.
 | leverage | string | Y | Leverage multiplier |
 | init_margin | string | Y | Initial margin amount |
 | adjust_position_mode | integer | Y | `1` time, `2` percent, `3` both, `4` manual, `5` on modification, `6` on transfer |
-| symbol_settings | array | Y | Array of `{symbol, target_position_percent, side}` objects. `side`: `SIDE_LONG` or `SIDE_SHORT` |
+| symbol_settings | array | Y | Array of `{symbol, target_position_percent, side}` objects |
 | adjust_position_percent | string | N | Deviation % to trigger rebalance |
 | adjust_position_time_interval | integer | N | Rebalance interval in seconds |
 | sl_percent | string | N | Stop-loss percentage |
@@ -454,13 +433,6 @@ Rate limit: 10 qps per UID. **Note: This is POST, not GET.**
 | bot_id | integer | Y | Bot ID |
 
 **Response** includes: config, multi-symbol positions, PnL metrics (realized/unrealized/total), rebalancing stats, margin/equity balances.
-
-**Response enum fields** now use string constants:
-
-- `bot_mode` (BotMode): `BOT_MODE_UNSPECIFIED` | `BOT_MODE_LONG` | `BOT_MODE_SHORT` | `BOT_MODE_MIX`
-- `bot_display_status` (BotDisplayStatus): `BOT_DISPLAY_STATUS_UNSPECIFIED` | `BOT_DISPLAY_STATUS_INITIALIZING` | `BOT_DISPLAY_STATUS_AWAIT_ACTIVATION` | `BOT_DISPLAY_STATUS_RUNNING` | `BOT_DISPLAY_STATUS_CANCELLING` | `BOT_DISPLAY_STATUS_COMPLETED`
-- `side` in symbol_settings (Side): `SIDE_UNSPECIFIED` | `SIDE_LONG` | `SIDE_SHORT`
-- `close_code` (BotCloseCode): `BOT_CLOSE_CODE_UNSPECIFIED` | `BOT_CLOSE_CODE_FAILED_INITIATION` | `BOT_CLOSE_CODE_CANCELED_MANUALLY` | `BOT_CLOSE_CODE_CANCELED_AUTO` | `BOT_CLOSE_CODE_CANCELED_AUTO_TP` | `BOT_CLOSE_CODE_CANCELED_AUTO_SL` | `BOT_CLOSE_CODE_CANCELED_AUTO_LIQ` | `BOT_CLOSE_CODE_DCA_REACH_MAX` | `BOT_CLOSE_CODE_CANCELED_AUTO_USER_BAN` | `BOT_CLOSE_CODE_CANCELED_TIRGGER_TOP_PRICE` | `BOT_CLOSE_CODE_CANCELED_TIRGGER_BOTTOM_PRICE` | `BOT_CLOSE_CODE_CANCELED_ROUND_TP` | `BOT_CLOSE_CODE_CANCELED_AUTO_SYMBOL_DELIST` | `BOT_CLOSE_CODE_CANCELED_NEGATIVE_ARBITRAGE` | `BOT_CLOSE_CODE_CANCELED_TRAILING_STOP` | `BOT_CLOSE_CODE_CANCELED_OI_LIMIT` | `BOT_CLOSE_CODE_CANCELED_COMPLIANCE` (and more)
 
 ---
 
@@ -511,4 +483,3 @@ Trading Bot endpoints use numeric error codes in the 70000-89999 range:
 - Bot IDs (`grid_id`, `bot_id`) are returned from create responses — store them for subsequent detail/close calls
 - Spot Grid and DCA close endpoints require `close_mode` to specify how remaining assets are settled
 - Account must be UTA (Unified Trading Account) type to use futures bots (error 70028/80010)
-- **Enum fields in responses** have been converted from integers to protobuf string constants (e.g. status `4` → `FUTURE_GRID_STATUS_RUNNING`, mode `1` → `F_MART_MODE_MARTINGALE_MODE_LONG`). Request enum fields for martingale bot (`martingale_mode`, `auto_cycle_toggle`, `stop_type`) also use string constants now.
