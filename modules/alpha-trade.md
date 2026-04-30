@@ -1,6 +1,6 @@
 # Module: Alpha Trade (On-chain)
 
-> This module is loaded on-demand by the Bybit Trading Skill. Authentication required.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. Authentication required.
 
 ## Scenario: Alpha On-chain Trading
 

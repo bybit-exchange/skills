@@ -1,6 +1,6 @@
 # Module: Earn
 
-> This module is loaded on-demand by the Bybit Trading Skill. Authentication required.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. Authentication required.
 
 ## Table of Contents
 

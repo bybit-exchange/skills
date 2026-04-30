@@ -1,6 +1,6 @@
 # Module: Copy Trading
 
-> This module is loaded on-demand by the Bybit Trading Skill. Authentication required for bind endpoints; leaderboards are public.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. Authentication required for bind endpoints; leaderboards are public.
 
 ## Scenario: Copy Trading
 

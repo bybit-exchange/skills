@@ -1,6 +1,6 @@
 # Module: TradFi Integration
 
-> This module is loaded on-demand by the Bybit Trading Skill. Authentication required for agreement signing; market queries are public.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. Authentication required for agreement signing; market queries are public.
 >
 > **Execution Constraints:** This module extends instrument discovery and agreement handling only. Order placement, confirmation flow, leverage, margin mode, and risk controls remain governed by the global rules in SKILL.md and the spot/derivatives modules. On Mainnet, all order and agreement operations MUST follow the Structured Operation Confirmation flow.
 
@@ -119,7 +119,7 @@ POST /v5/user/agreement
 
 **Restrictions:**
 - **Master account only** — subaccounts cannot call this. Once the master signs, all its subaccounts inherit eligibility.
-- API key must carry **at least one** of: Account Transfer, Subaccount Transfer, or Withdrawal permission.
+- API key must carry **at least one** of: Account Transfer, Subaccount Transfer, or Withdrawal permission. For AI use, prefer Account Transfer or Subaccount Transfer; **do not enable Withdrawal solely for this skill**.
 - xStocks **do not** require this agreement.
 
 > Oil (CLUSDT) requires a separate call with `category=3` / `categoryV2=2`. Sign both if the user plans to trade both asset classes.

@@ -1,6 +1,6 @@
 # Module: Market Data
 
-> This module is loaded on-demand by the Bybit Trading Skill. No authentication required for these endpoints.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. No authentication required for these endpoints.
 
 ## Scenario: Check Market Data
 

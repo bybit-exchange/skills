@@ -1,6 +1,6 @@
 # Module: Fiat & P2P
 
-> This module is loaded on-demand by the Bybit Trading Skill. Authentication required for all endpoints.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. Authentication required for all endpoints.
 
 ---
 

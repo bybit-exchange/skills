@@ -1,6 +1,6 @@
 # Module: Advanced Features
 
-> This module is loaded on-demand by the Bybit Trading Skill. Authentication required for most endpoints.
+> This module is loaded on-demand by the Bybit Exchange Trading Skill. Authentication required for most endpoints.
 
 ## WebSocket
 
