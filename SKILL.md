@@ -2,18 +2,16 @@
 name: bybit-exchange-trading-skill
 description: Bybit Exchange Trading Skill — trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Requires Bybit API credentials and explicit confirmation for real-money writes.
 version: 1.2.5
-license: MIT
 metadata:
-  version: 1.2.5  # ClawHub scanner compliance + provenance clarification
-  author: Community maintainer
-  updated: 2026-04-29
   openclaw:
     requires:
       env:
         - BYBIT_API_KEY
         - BYBIT_API_SECRET
+      bins:
+        - curl
     primaryEnv: BYBIT_API_KEY
-    env:
+    envVars:
       - name: BYBIT_API_KEY
         description: Your Bybit API key with Read + Trade permissions only; never enable Withdraw
         required: true
@@ -26,19 +24,6 @@ metadata:
         description: "Target environment: testnet or mainnet"
         required: false
         default: testnet
-env:
-  - name: BYBIT_API_KEY
-    description: Your Bybit API key (Read + Trade permissions only; never enable Withdraw)
-    required: true
-    sensitive: true
-  - name: BYBIT_API_SECRET
-    description: Your Bybit API secret key
-    required: true
-    sensitive: true
-  - name: BYBIT_ENV
-    description: "Target environment: testnet or mainnet"
-    required: false
-    default: testnet
 ---
 
 # Bybit Exchange Trading Skill
@@ -98,7 +83,7 @@ BYBIT_API_SECRET=your_secret_key
 BYBIT_ENV=testnet
 ```
 
-For OpenClaw (cloud / CrawHub):
+For OpenClaw (cloud / ClawHub):
 ```json
 // openclaw.json env block — keys stay server-side, never appear in conversation
 { "env": { "vars": { "BYBIT_API_KEY": "...", "BYBIT_API_SECRET": "...", "BYBIT_ENV": "testnet" } } }
