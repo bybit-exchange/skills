@@ -9,6 +9,8 @@
 3. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin / Discount Buy
 4. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
 5. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
+6. [Hold-to-Earn](#scenario-hold-to-earn) — Airdrop yield by holding coins
+7. [PWM (Private Wealth Management)](#scenario-pwm) — Institutional fund management & user investment plans
 
 ---
 
@@ -387,3 +389,75 @@ GET /v5/earn/token/history-apr?coin=BYUSDT&range=2
 | Yield History | `/v5/earn/token/yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/token/hourly-yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
 | APR History | `/v5/earn/token/history-apr` | GET | No | coin, range | — |
+
+---
+
+## Scenario: Hold-to-Earn
+
+User might say: "hold to earn", "airdrop yield", "holding rewards", "USDE yield"
+
+> Earn yield by holding eligible coins (USDE, USD1) — no staking needed, yield distributed daily as airdrops.
+
+| Endpoint | Path | Method | Auth | Required | Optional |
+|----------|------|--------|------|----------|----------|
+| Product List | `/v5/earn/hold-to-earn/product` | GET | No | — | — |
+| Yield History | `/v5/earn/hold-to-earn/yield-history` | GET | Yes | limit (1-49) | timeStart, timeEnd, cursor |
+
+> **Notes**:
+> - Product status: `NotStarted`, `Online`, `Ended`. Only `Online` products distribute yield.
+> - `timeStart`/`timeEnd` are Unix seconds, cannot query >3 months ago.
+> - Response: `effectiveAmount` (principal), `pnl` (yield distributed), `apy` (annualized rate).
+
+---
+
+## Scenario: PWM
+
+User might say: "private wealth", "PWM", "investment plan", "fund management", "asset manager", "subscribe plan", "redeem plan"
+
+> Private Wealth Management — institutional fund management and user investment plans.
+
+### PWM — User Side
+
+| Endpoint | Path | Method | Auth | Required | Optional |
+|----------|------|--------|------|----------|----------|
+| List Plans | `/v5/earn/pwm/investment-plan/all` | GET | Yes | — | planId, status, limit, cursor |
+| Plan Detail | `/v5/earn/pwm/investment-plan/detail` | GET | Yes | planId | — |
+| New Plan Detail | `/v5/earn/pwm/investment-plan/new-plan` | GET | Yes | planId | — |
+| Subscribe | `/v5/earn/pwm/investment-plan/subscribe` | POST | Yes | planId, orderLinkId | accountType |
+| Invest More | `/v5/earn/pwm/investment-plan/invest-more` | POST | Yes | planId, category, productId, amount, orderLinkId | accountType |
+| Redeem | `/v5/earn/pwm/investment-plan/redeem` | POST | Yes | planId, category, productId, orderLinkId | amount, shares, positionId |
+| Claim | `/v5/earn/pwm/investment-plan/claim` | POST | Yes | planId, orderLinkId | toAccountType |
+| Asset Trend | `/v5/earn/pwm/investment-plan/asset-trend` | GET | Yes | planId | startTime, endTime |
+| Fund NAV | `/v5/earn/pwm/investment-plan/fund-nav` | GET | Yes | fundId | startTime, endTime |
+| Order List | `/v5/earn/pwm/investment-plan/order` | GET | Yes | — | planId, category, type, status, startTime, endTime, limit, cursor, orderLinkId |
+| Product Cards | `/v5/earn/pwm/customize-plan/product` | GET | No | — | — |
+| Create Custom Plan | `/v5/earn/pwm/customize-plan/create` | POST | Yes | products[], orderLinkId | accountType |
+
+> **Notes**:
+> - Plan status lifecycle: `PendingSubscription` → `Active` → `Closed`.
+> - `category` values: `multiCoinEarning`, `fixedYield`, `equityFund`, `onchainEarn`.
+> - `accountType`: `FUND` (default), `UNIFIED`.
+> - Redeem uses `shares` for `equityFund` category, `amount` for others.
+
+### PWM — Institutional Side
+
+| Endpoint | Path | Method | Auth | Required | Optional |
+|----------|------|--------|------|----------|----------|
+| List Funds | `/v5/earn/pwm/asset-manager/all-funds` | GET | Yes | — | — |
+| Create Fund | `/v5/earn/pwm/asset-manager/create-fund` | POST | Yes | fundName, coin, profitShareRate, managementFeeRate, reqLinkId | — |
+| Settle Profit | `/v5/earn/pwm/asset-manager/settle-profit` | POST | Yes | fundId, reqLinkId | — |
+| Create Investment Plan | `/v5/earn/pwm/asset-manager/create-investment-plan` | POST | Yes | accountUid, planName, planType, investmentDistribution[], reqLinkId | — |
+| Get Plans | `/v5/earn/pwm/asset-manager/get-investment-plan` | GET | Yes | — | — |
+| Manage Plan | `/v5/earn/pwm/asset-manager/manage-investment-plan` | POST | Yes | planId, reqLinkId | updateStatus, updateFunds[] |
+| List Orders | `/v5/earn/pwm/asset-manager/all-order` | GET | Yes | — | — |
+| Manage Order | `/v5/earn/pwm/asset-manager/manage-order` | POST | Yes | orderId, action, reqLinkId | — |
+| Create Sub-Account | `/v5/earn/pwm/asset-manager/create-sub-account` | POST | Yes | fundId, reqLinkId | — |
+| Fund Transfer | `/v5/earn/pwm/fund-transfer` | POST | Yes | transferId, fromUserId, toUserId, amount, coin | — |
+| Transfer Records | `/v5/earn/pwm/query-fund-transfer-result` | GET | Yes | — | transferId, fromUserId |
+
+> **Notes**:
+> - Fund status lifecycle: `PendingSubscribe` → `Active` → `Closing` → `Closed`.
+> - Supported `coin`: BTC, ETH, USDT, USDC, SOL, MNT, XRP.
+> - `action` values: `Approve`, `Reject`.
+> - `planType`: `stable`, `advanced`.
+> - `reqLinkId` max 36 chars, used for idempotency.

@@ -132,12 +132,14 @@ POST /v5/position/trading-stop
 
 | Endpoint | Path | Method | Required Params | Optional Params | Rate Limit | Categories |
 |----------|------|--------|----------------|-----------------|------------|------------|
-| Place Order | `/v5/order/create` | POST | category, symbol, side, orderType, qty | price, timeInForce, orderLinkId, triggerPrice, takeProfit, stopLoss, tpslMode, reduceOnly, positionIdx, marketUnit... | 10-20/s | spot, linear, inverse, option |
+| Place Order | `/v5/order/create` | POST | category, symbol, side, orderType, qty | price, timeInForce, orderLinkId, triggerPrice, takeProfit, stopLoss, tpslMode, reduceOnly, positionIdx, marketUnit, rpiTakerAccess... | 10-20/s | spot, linear, inverse, option |
 | Amend Order | `/v5/order/amend` | POST | category, symbol | orderId/orderLinkId, qty, price, takeProfit, stopLoss, triggerPrice | 10/s | spot, linear, inverse, option |
 | Cancel Order | `/v5/order/cancel` | POST | category, symbol | orderId/orderLinkId, orderFilter | 10-20/s | spot, linear, inverse, option |
 | Get Open Orders | `/v5/order/realtime` | GET | category | symbol, baseCoin, orderId, orderLinkId, openOnly, limit, cursor | 50/s | spot, linear, inverse, option |
 | Cancel All Orders | `/v5/order/cancel-all` | POST | category | symbol, baseCoin, settleCoin, orderFilter, stopOrderType | 10/s | spot, linear, inverse, option |
 | Order History | `/v5/order/history` | GET | category | symbol, orderId, orderLinkId, orderFilter, orderStatus, startTime, endTime, limit, cursor | 50/s | spot, linear, inverse, option |
+
+> **`rpiTakerAccess`** (Place Order, optional boolean, default `false`): When `true`, allows this order to be filled against RPI (Retail Price Improvement) orders. Response field `rpiMatchedQty` in Order History shows cumulative RPI-matched quantity.
 | Batch Place Order | `/v5/order/create-batch` | POST | category, request[] | — | per-order | spot, linear, inverse, option |
 | Batch Amend Order | `/v5/order/amend-batch` | POST | category, request[] | — | per-order | spot, linear, inverse, option |
 | Batch Cancel Order | `/v5/order/cancel-batch` | POST | category, request[] | — | per-order | spot, linear, inverse, option |

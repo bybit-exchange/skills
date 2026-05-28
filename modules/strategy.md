@@ -118,14 +118,57 @@ POST /v5/strategy/create
 {"category":"UTA_USDT","symbol":"BTCUSDT","side":"Buy","size":"1","strategyType":"chaseOrder","chasePercentE4":50,"maxChasePrice":"90000"}
 ```
 
+### POV (Percentage of Volume)
+
+Adapts child order size to live market activity — execution rate scales with real-time volume.
+
+> ⚠️ **POV only supports Perp**: `UTA_USDT`, `UTA_USDC`, `UTA_INVERSE`. NOT `UTA_SPOT`.
+
+**Required**: category, symbol, side, strategyType(`pov`), povParams
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| category | string | Y | `UTA_USDT`, `UTA_USDC`, `UTA_INVERSE` only |
+| symbol | string | Y | e.g. `BTCUSDT` |
+| side | string | Y | `Buy` or `Sell` |
+| strategyType | string | Y | `pov` |
+| size | string | N | Max quantity (maxQty). Required when interval>0 unless duration is set |
+| duration | integer | N | Total time in seconds. Range: [900, 86400]. Required when interval>0 unless size is set |
+| interval | integer | N | Seconds between orders. 0=OneTime mode (single child order then stop). Range: 0 or [5, 3600] |
+| reduceOnly | boolean | N | Only reduce position. Default: false |
+| positionIdx | integer | N | 0=one-way, 1=hedge-long, 2=hedge-short. Default: 0 |
+| povParams | object | Y | POV-specific parameters (see below) |
+
+**povParams object**:
+
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| mode | string | Y | `TradedVolume`, `OppositeSideLiquidity`, or `SameSideLiquidity` |
+| participationRate | string | Y | Percentage `"1"`-`"100"`, max 1 decimal place |
+| referenceWindow | string | Conditional | Seconds `"60"`-`"14400"`. Required when mode=`TradedVolume` |
+| depthReference | integer | Conditional | Orderbook depth level 1-10. Required when mode=`OppositeSideLiquidity` or `SameSideLiquidity` |
+
+**Execution logic by mode**:
+- `TradedVolume` → Market order (childQty = volume in referenceWindow × participationRate%)
+- `OppositeSideLiquidity` → Taker Limit order @BBO (childQty = opposite side depth × participationRate%)
+- `SameSideLiquidity` → Post-Only order @BBO (childQty = same side depth × participationRate%)
+
+> **interval=0 (OneTime)**: Places a single child order then stops immediately. No size/duration needed.
+> **interval>0**: At least one of `size` or `duration` must be set as a stop condition.
+
+```
+POST /v5/strategy/create
+{"category":"UTA_USDT","symbol":"BTCUSDT","side":"Buy","strategyType":"pov","size":"10","duration":3600,"interval":30,"povParams":{"mode":"TradedVolume","participationRate":"5","referenceWindow":"300"}}
+```
+
 ---
 
 ## Query, Monitor & Stop
 
 | Endpoint | Path | Method | Key Params |
 |----------|------|--------|-----------|
-| Strategy List | `/v5/strategy/list` | GET | strategyId, symbol, category(`UTA_*`), strategyType, status, beginTimeE0, endTimeE0, pageSize(max 50), cursor |
-| Strategy Orders | `/v5/strategy/order-list` | GET | strategyId(**required**), status, symbol, BeginTimeE0, EndTimeE0, pageSize(max 50), cursor, StrategyType |
+| Strategy List | `/v5/strategy/list` | GET | strategyId, symbol, category(`UTA_*`), strategyType(`twap`/`iceberg`/`chaseOrder`/`pov`), status, beginTimeE0, endTimeE0, pageSize(max 50), cursor |
+| Strategy Orders | `/v5/strategy/order-list` | GET | strategyId(**required**), status, symbol, BeginTimeE0, EndTimeE0, pageSize(max 50), cursor, StrategyType(`twap`/`iceberg`/`chaseOrder`/`pov`) |
 | Stop Strategy | `/v5/strategy/stop` | POST | strategyId(**required**) |
 
 ### Strategy Status Codes
@@ -143,13 +186,20 @@ POST /v5/strategy/create
 |------|--------|
 | 0 | Not terminated |
 | 1 | User manually stopped |
-| 2 | Completed normally |
-| 3 | Trading failed |
+| 2 | Completed normally (all quantity filled) |
+| 3 | Insufficient balance |
 | 4 | Position closed |
 | 5 | Risk control triggered |
 | 6 | System error |
 | 7 | Exceeded maxChasePrice |
 | 8 | Hit limit price protection |
+| 18 | Beyond maxChasePrice |
+| 24 | TWAP hit limit price |
+| 27 | POV maxDuration reached |
+| 28 | POV maxQty reached |
+| 29 | POV trading failed 6 consecutive times |
+| 30 | POV OneTime mode executed |
+| 31 | POV no fills in 24 hours |
 
 ### Order Status (for order-list)
 
@@ -186,6 +236,21 @@ Strategy endpoints use the **standard V5 response format** (`retCode`/`retMsg`):
 
 ---
 
+## POV Error Codes
+
+| Code | Description |
+|------|-------------|
+| 60088 | Invalid mode |
+| 60089 | participationRate out of range [1,100] or more than 1 decimal place |
+| 60090 | referenceWindow or depthReference missing or invalid for selected mode |
+| 60091 | Missing stop condition (size or duration) when interval>0 |
+| 60092 | Estimated child qty out of [minQty, maxOrderQty] |
+| 60093 | duration out of range [900, 86400] |
+| 60094 | Estimated child qty exceeds maxQty |
+| 60095 | interval exceeds duration |
+
+---
+
 ## Notes
 
 - `strategyId` is a UUID returned from the create response -- store it for query/stop calls
@@ -196,4 +261,5 @@ Strategy endpoints use the **standard V5 response format** (`retCode`/`retMsg`):
 - Chase: strategyType is `chaseOrder` (camelCase, NOT `chase`); generates frequent order cancellations/replacements (watch rate limits)
 - Chase: many cancelled orders (status=4) is NORMAL behavior -- it cancels and replaces to track price
 - chasePercentE4 and chaseDistance are mutually exclusive across all strategy types
-- All size/price params are strings; duration/interval/chasePercentE4/orderCount are integers
+- POV: only supports Perp (UTA_USDT/UTA_USDC/UTA_INVERSE), NOT spot; interval=0 is OneTime mode
+- All size/price params are strings; duration/interval/chasePercentE4/orderCount/depthReference are integers

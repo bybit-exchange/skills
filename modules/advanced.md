@@ -79,7 +79,12 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Supply Contract Info | `/v5/crypto-loan-fixed/supply-contract-info` | GET | supplyCurrency | — |
 | Supply Order Quote | `/v5/crypto-loan-fixed/supply-order-quote` | GET | orderCurrency | orderBy |
 | Supply Order Info | `/v5/crypto-loan-fixed/supply-order-info` | GET | — | orderId |
-| Cancel Supply | `/v5/crypto-loan-fixed/supply-order-cancel` | POST | orderId | — |
+| Place Supply | `/v5/crypto-loan-fixed/supply` | POST | orderCurrency, orderAmount, annualRate, term | availableSource |
+| Cancel Supply | `/v5/crypto-loan-fixed/supply-order-cancel` | POST | orderId | refundedAccount |
+
+> **Place Supply `availableSource`**: `0` funding account (default), `1` flexible savings, `2` mixed (funding + flexible savings).
+> **Cancel Supply `refundedAccount`** (only effective when order was placed from flexible savings): `0` redeem to funding account (default), `1` keep in flexible savings (unfreeze).
+> **Error `148048`**: "The collateral amount has exceeded the platform limit" — applies to borrow, renew, and adjust-LTV operations.
 
 ### Crypto Loan — Flexible (authentication required)
 
@@ -88,8 +93,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Repay | `/v5/crypto-loan-flexible/repay` | POST | loanCoin, repayAmount | — |
 | Repay Collateral | `/v5/crypto-loan-flexible/repay-collateral` | POST | orderId | — |
 | Ongoing Coins | `/v5/crypto-loan-flexible/ongoing-coin` | GET | — | loanCurrency |
-| Borrow History | `/v5/crypto-loan-flexible/borrow-history` | GET | — | limit |
-| Repayment History | `/v5/crypto-loan-flexible/repayment-history` | GET | — | loanCurrency |
+| Borrow History | `/v5/crypto-loan-flexible/borrow-history` | GET | — | orderId, loanCurrency, limit, cursor |
+| Repayment History | `/v5/crypto-loan-flexible/repayment-history` | GET | — | repayId, loanCurrency, limit, cursor |
 
 ---
 
@@ -98,13 +103,18 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Endpoint | Path | Method | Required Params | Optional Params |
 |----------|------|--------|----------------|-----------------|
 | Product Info | `/v5/ins-loan/product-infos` | GET | — | productId |
-| Margin Coin Conversion | `/v5/ins-loan/ensure-tokens-convert` | GET | — | loanOrderId |
+| Margin Coin Conversion | `/v5/ins-loan/ensure-tokens-convert` | GET | — | productId |
+| Margin Coin Info | `/v5/ins-loan/ensure-tokens` | GET | — | productId |
 | Loan Order | `/v5/ins-loan/loan-order` | GET | — | orderId, startTime, endTime, limit |
 | Repayment History | `/v5/ins-loan/repaid-history` | GET | — | startTime, endTime, limit |
 | LTV Conversion | `/v5/ins-loan/ltv-convert` | GET | — | — |
-| Margin Coin Info | `/v5/ins-loan/ensure-tokens` | GET | — | productId |
-| LTV | `/v5/ins-loan/ltv` | GET | — | — |
-| Repay | `/v5/ins-loan/repay-loan` | POST | — | — |
+| Coin Delta Amount | `/v5/ins-loan/coin-delta-amount` | GET | — | coin |
+| Association UID | `/v5/ins-loan/association-uid` | POST | uid, operate | — |
+| Repay | `/v5/ins-loan/repay-loan` | POST | token, quantity | — |
+
+> **Association UID `operate`**: `0` = bind UID, `1` = unbind UID. Rate limit: 1 req/s.
+> **Coin Delta Amount**: Returns per-coin delta hedging limits (`coinDeltaSize`, `coinDeltaAvailableAmount`) and aggregate `riskUnitDeltaAmount`.
+> **Product Info `productType`**: `0` = Default, `1` = CTA, `2` = Hedge.
 
 ---
 
