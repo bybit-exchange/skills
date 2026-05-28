@@ -149,7 +149,8 @@ POST /v5/account/repay
 | Sub-account List | `/v5/user/query-sub-members` | GET | — | — | — |
 | API Key Info | `/v5/user/query-api` | GET | — | — | — |
 | Member Type | `/v5/user/get-member-type` | GET | — | — | — |
-| Affiliate User Info | `/v5/user/aff-customer-info` | GET | uid | — | — |
+| Affiliate User Info | `/v5/user/aff-customer-info` | GET | uid | coin, business | — |
+| Affiliate Sub List | `/v5/affiliate/affiliate-sub-list` | GET | — | cursor, size, startDate, endDate, subAffId | — |
 | Sub-account List (full) | `/v5/user/submembers` | GET | — | pageSize, nextCursor | — |
 | Sub-account All Keys | `/v5/user/sub-apikeys` | GET | subMemberId | limit, cursor | — |
 | Escrow Sub-accounts | `/v5/user/escrow_sub_members` | GET | — | pageSize, nextCursor | — |
@@ -239,9 +240,21 @@ POST /v5/account/repay
 - `currency` (required): Coin name (e.g. `USDT`). Unified account only.
 - Note: Path uses capital `L` in `Liability` (per BGW routing).
 
+### Wallet Balance (`/v5/account/wallet-balance`)
+- Response coin-level field `colRes` (platform-level collateral restriction): `-1` not applicable, `0` normal, `1` restricted (reaching platform limit), `2` fully restricted (at platform limit).
+- Error `182011` on Set Collateral Switch: "The {coins} collateral amount has reached the platform limit."
+
+### Affiliate User Info (`/v5/user/aff-customer-info`)
+- `business` filter: `1` Derivatives, `2` Spot, `3` ByFi, `4` USDC, `5` Options.
+- Response includes 30-day and 365-day volumes, deposit amounts, VIP level, KYC level, TradFi volume, and commission breakdown by coin.
+
+### Affiliate Sub List (`/v5/affiliate/affiliate-sub-list`)
+- Query sub-affiliates with optional commission date range (`startDate`/`endDate` in YYYY-MM-DD format).
+- `size`: 0–100 (0 = all, up to 100). Rate limit: 10 req/s. Requires Master UID with affiliate permission.
+
 ### API Key Permissions
-- 15 permission categories: ContractTrade, Spot, Wallet, Options, Derivatives, CopyTrading, BlockTrade, Exchange, NFT, Affiliate, Earn, FiatP2P, FiatBitPay, FiatBybitPay (deprecated), FiatConvertBroker.
-- Read-Write API keys cannot add or delete FiatP2P, FiatBitPay (formerly FiatBybitPay), and FiatConvertBroker permissions.
+- 14 permission categories: ContractTrade, Spot, Wallet, Options, Derivatives, CopyTrading, BlockTrade, Exchange, NFT, Affiliate, Earn, FiatP2P, FiatBitPay, FiatConvertBroker.
+- Read-Write API keys cannot add or delete FiatP2P, FiatBitPay, and FiatConvertBroker permissions.
 
 ## Enums
 
