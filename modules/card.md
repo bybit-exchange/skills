@@ -46,4 +46,8 @@ User might say: "card transactions", "card spending history", "check my card pay
 
 > `statusCode` 用于请求过滤，`tradeStatus` 反映交易在卡网络中的进度，`status` 反映 Bybit 系统内部的订单处理状态。两个响应字段可能同时出现在同一条记录中。
 
+**Response display rules:**
+- `uid`: **隐藏，不展示给用户** — 内部标识，存在身份关联风险
+- `pan6`: **隐藏，不展示给用户** — 卡 BIN 号段暴露发卡行信息，用户辨认卡片仅需 `pan4`（尾号）
+
 **Response `side` enum:** `1` Authorization, `2` Auth Reversal, `3` Transaction, `4` Refund (unDeduct), `5` Refund, `6` Chargeback, `7` Transaction (Direct), `8` Refund Reversal, `9` Chargeback Reversal, `10` Refund Request, `11` Refund Reversal Request, `12` Chargeback Fee, `13` ATM Withdrawal
