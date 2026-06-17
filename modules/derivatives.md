@@ -161,7 +161,7 @@ POST /v5/position/trading-stop
 | Confirm Pending MMR | `/v5/position/confirm-pending-mmr` | POST | category, symbol | — | linear, inverse |
 
 ### Get Symbol Leverage (`/v5/position/symbol-info`)
-- Returns `symbol`, `leverage`, `side`, `positionIdx` per position. Hedge mode returns 2 entries per symbol (long + short).
+- Returns `symbol`, `leverage`, `side`, `positionIdx` per entry. Per spec field annotation, hedge mode returns 2 entries per symbol (long + short); one-way mode returns 1.
 - `category`: `linear` (USDT perpetual / USDC contract) | `inverse` (Inverse perpetual / futures).
 - Rate limit: 2 req/s (UID). Requires Read or Write key with "Contract-position" permission.
 - **Not supported in Portfolio Margin mode** — returns `retCode=3405112`.

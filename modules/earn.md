@@ -423,12 +423,14 @@ GET  /v5/earn/rwa/nav-chart?productId=1001
 | Product List | `/v5/earn/rwa/product` | GET | No | 20/s IP | — | coin |
 | Place Order | `/v5/earn/rwa/place-order` | POST | Yes | 5/s UID | productId, orderType, coin, orderLinkId | stakeAmount (Stake), redeemShares (Redeem), accountType |
 | Position | `/v5/earn/rwa/position` | GET | Yes | 10/s UID | — | — |
-| Order List | `/v5/earn/rwa/order` | GET | Yes | 10/s UID | — | orderId, orderLinkId, orderType, productId, startTime, endTime, limit, cursor |
+| Order List | `/v5/earn/rwa/order` | GET | Yes | 10/s UID | — | orderId, orderLinkId, orderType, productId, startTime, endTime, limit (1–50, default 20), cursor |
 | NAV Chart | `/v5/earn/rwa/nav-chart` | GET | No | 20/s IP | productId | startTime, endTime |
 
 **Enums**: orderType: `Stake`|`Redeem` · accountType: `FUND`(default)|`UNIFIED` · order status: `Processing`|`Success`|`Failed` · savingType: `Flexible`|`Fixed`
 
-> **Stake**: requires `stakeAmount`; deducts settlement coin from `accountType`, allocates shares at next NAV. **Redeem**: requires `redeemShares`; locks shares, refunds settlement coin to `accountType` after T+N settlement. `orderLinkId` reuse returns error `180025`. Order list: `startTime` defaults 7d ago, earliest 180d ago. NAV chart: time span ≤ 180 days; `startTime` defaults `endTime - 7d`, `endTime` defaults now.
+> **⚠️ Timestamp unit (RWA-specific)**: `startTime` / `endTime` on `/v5/earn/rwa/order` and `/v5/earn/rwa/nav-chart` are **Unix seconds**, NOT milliseconds. This differs from Bybit V5 default (most other endpoints use ms). Sending ms will be rejected or return empty.
+>
+> **Stake**: requires `stakeAmount`; deducts settlement coin from `accountType`, allocates shares at next NAV. **Redeem**: requires `redeemShares`; locks shares, refunds settlement coin to `accountType` after T+N settlement. `orderLinkId` reuse returns error `180025`. Order list: `startTime` defaults 7d ago, earliest 180d ago, `limit` max **50** (not 100). NAV chart: time span ≤ 180 days; `startTime` defaults `endTime - 7d`, `endTime` defaults now.
 
 **RWA Error codes (180xxx)**: `180007` Product offline / out of subscription window · `180008` Product does not exist · `180012` Purchase share out of [min,max] range · `180013` Stake over individual maximum · `180014` Redeem share invalid · `180015` Sold out · `180016` Balance not enough · `180019` orderLinkId required · `180020` Position not found · `180022` KYC level not reached · `180025` Duplicate orderLinkId · `180029` Redeem not allowed.
 
