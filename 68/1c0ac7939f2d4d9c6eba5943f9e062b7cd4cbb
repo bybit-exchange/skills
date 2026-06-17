@@ -1,0 +1,25 @@
+modules/earn.md
+  68268a58dad172f6 426,431-433
+modules/derivatives.md
+  68268a58dad172f6 164
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.9+daa2e24",
+  "base_commit_sha": "681c0ac7939f2d4d9c6eba5943f9e062b7cd4cbb",
+  "prompts": {
+    "68268a58dad172f6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abb51cb8-6c2a-44bc-b447-93414ad16ea6",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 5,
+      "total_deletions": 3,
+      "accepted_lines": 814,
+      "overriden_lines": 0
+    }
+  }
+}
