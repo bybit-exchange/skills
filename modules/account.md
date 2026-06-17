@@ -252,6 +252,9 @@ POST /v5/account/repay
 - Query sub-affiliates with optional commission date range (`startDate`/`endDate` in YYYY-MM-DD format).
 - `size`: 0–100 (0 = all, up to 100). Rate limit: 10 req/s. Requires Master UID with affiliate permission.
 
+### Set Margin Mode (`/v5/account/set-margin-mode`)
+- Error code `3200425`: Cannot switch to Portfolio Margin (PM) mode while holding an Event Futures position. Close the position before switching.
+
 ### API Key Permissions
 - 14 permission categories: ContractTrade, Spot, Wallet, Options, Derivatives, CopyTrading, BlockTrade, Exchange, NFT, Affiliate, Earn, FiatP2P, FiatBitPay, FiatConvertBroker.
 - Read-Write API keys cannot add or delete FiatP2P, FiatBitPay, and FiatConvertBroker permissions.

@@ -209,6 +209,99 @@ Rate limit: 3/s (UID), 2000/s global.
 
 ---
 
+## Scenario: Alpha LP / Farm (Liquidity Pools)
+
+User might say: "stake to LP pool", "add liquidity to ETH-USDC pool", "redeem LP position", "withdraw from pool", "view LP positions", "LP order history"
+
+> Provide liquidity to Alpha on-chain pools, earn rewards. Same token-code convention (`CEX_<id>` payment, `DEX_<id>` token). All endpoints **POST**. KYC required, write-permission API key. Stake/redeem are async — 200 response is ACK only; poll `position-list` or `order-list` to confirm. On-chain confirmation typically 10-60s.
+
+**⚠️ Mandatory Stake flow**
+
+> 1. `POST /v5/alpha/lp/pool-list` → discover pools (filter by `tokenSymbol`)
+> 2. `POST /v5/alpha/lp/pool-info` → get full pool details (APY, fee rate, reserves, price range)
+> 3. `POST /v5/alpha/lp/pay-token-list` → verify available balance, get `tokenCode`
+> 4. **Confirm with user**: pool, stake amount, range, expected APY
+> 5. `POST /v5/alpha/lp/stake` → returns `positionId` + `orderNo`
+> 6. Poll `POST /v5/alpha/lp/position-list` and `/order-list` until `orderStatus=2` (Success)
+
+**⚠️ Mandatory Redeem flow**
+
+> 1. `POST /v5/alpha/lp/position-list` → get `positionId` and current value
+> 2. **Confirm with user**: position, reduction ratio (`dercRatio`)
+> 3. `POST /v5/alpha/lp/redeem` → returns `orderNo`
+> 4. Poll `/order-list` until `orderStatus=2` (Success)
+
+### Pool Discovery
+
+```
+POST /v5/alpha/lp/pool-list  {"tokenSymbol":"ETH"}
+POST /v5/alpha/lp/pool-info  {"poolAddress":"0x..."}
+POST /v5/alpha/lp/pay-token-list  {}
+POST /v5/alpha/lp/pay-token-price  {"tokenCode":["CEX_1","CEX_2"],"chainCode":"ETH"}
+```
+
+| Endpoint | Path | Method | Required | Optional |
+|----------|------|--------|----------|----------|
+| Pool List | `/v5/alpha/lp/pool-list` | POST | — | tokenSymbol |
+| Pool Info | `/v5/alpha/lp/pool-info` | POST | poolAddress | — |
+| Pay Token List | `/v5/alpha/lp/pay-token-list` | POST | — | chainCode, tokenAddress |
+| Pay Token Price | `/v5/alpha/lp/pay-token-price` | POST | tokenCode | chainCode |
+
+> `pay-token-price`: `tokenCode` is an array (1–50 tokens) for batch query. `pay-token-list`: returns user's `availableBalance` per token. Rate limits: 5/s UID, 5000/s global on all four.
+
+### Stake / Redeem
+
+```
+POST /v5/alpha/lp/stake
+{"positionId":0,"poolAddress":"0x...","payTokenAmount":"1000","payTokenCode":"CEX_1","rangeUpper":"2000","rangeLower":"1800"}
+```
+
+> `positionId=0` → create new position; non-zero → add to existing. Either `rangeUpper`/`rangeLower` (range order) **or** `priceUpper`/`priceLower` (price-priority order) — not both. Rate: 1/s UID, 2000/s global.
+
+```
+POST /v5/alpha/lp/redeem
+{"positionId":12345,"poolAddress":"0x...","dercRatio":"0.5"}
+```
+
+> `dercRatio`: `0`–`1`. `"0.5"` = redeem 50%, `"1"` = close entire position. Rate: 1/s UID, 2000/s global.
+
+| Endpoint | Path | Method | Required | Optional |
+|----------|------|--------|----------|----------|
+| Stake | `/v5/alpha/lp/stake` | POST | positionId, poolAddress, payTokenAmount, payTokenCode | rangeUpper, rangeLower, priceUpper, priceLower |
+| Redeem | `/v5/alpha/lp/redeem` | POST | positionId, poolAddress, dercRatio | receiveTokenCode |
+| Position List | `/v5/alpha/lp/position-list` | POST | — | — |
+| Order List | `/v5/alpha/lp/order-list` | POST | — | orderType, tokenCode, orderStatus, days, limit, pageIndex, poolAddress |
+
+### Track Status
+
+```
+POST /v5/alpha/lp/position-list  {}
+POST /v5/alpha/lp/order-list  {"orderType":1,"days":7,"limit":20,"pageIndex":1}
+```
+
+> **Position status**: `1` Active · `2` Closed · `3` Processing.
+> **Order status**: `1` Processing · `2` Success · `3` Failed (`failureReason` populated).
+> **Order type filter**: `0` All (default) · `1` Stake · `2` Redeem.
+> `days`: 0–365 (default 90). `limit`: 1–100 (default 20). `pageIndex`: 1-based (default 1).
+> Position-list rate: 3/s UID. Order-list rate: 3/s UID.
+
+### LP Error Codes (180xxx)
+
+| Code | Meaning |
+|------|---------|
+| 180000 | Internal server error |
+| 180001 | Invalid request parameter |
+| 180002 | Token not supported |
+| 180003 | Position not found (redeem) |
+| 180004 | Amount precision exceeds limit |
+| 180006 | Amount below minimum |
+| 180007 | Amount exceeds maximum |
+| 180100 | Service temporarily unavailable |
+| 180104 | Wallet balance insufficient |
+| 180200 | Request conflict |
+
+---
+
 ## Error Codes (180xxx)
 
 | Code | Meaning |
