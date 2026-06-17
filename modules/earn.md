@@ -9,8 +9,9 @@
 3. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin / Discount Buy
 4. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
 5. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
-6. [Hold-to-Earn](#scenario-hold-to-earn) — Airdrop yield by holding coins
-7. [PWM (Private Wealth Management)](#scenario-pwm) — Institutional fund management & user investment plans
+6. [RWA Earn](#scenario-rwa-earn) — Tokenized real-world asset stake/redeem (BlackRock IGBF etc.)
+7. [Hold-to-Earn](#scenario-hold-to-earn) — Airdrop yield by holding coins
+8. [PWM (Private Wealth Management)](#scenario-pwm) — Institutional fund management & user investment plans
 
 ---
 
@@ -56,13 +57,16 @@ GET  /v5/earn/hourly-yield?category=FlexibleSaving
 | Endpoint | Path | Method | Required | Optional |
 |----------|------|--------|----------|----------|
 | Product | `/v5/earn/product` | GET | category | coin |
-| Place Order | `/v5/earn/place-order` | POST | category, orderType, accountType, coin, amount, productId, orderLinkId | redeemPositionId, toAccountType |
+| Place Order | `/v5/earn/place-order` | POST | category, orderType, accountType, coin, amount, productId, orderLinkId | redeemPositionId, toAccountType, interestCard |
 | Order | `/v5/earn/order` | GET | category | orderId, orderLinkId, productId, startTime, endTime, limit, cursor |
 | Position | `/v5/earn/position` | GET | category | productId, coin |
 | Yield | `/v5/earn/yield` | GET | category | productId, startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/hourly-yield` | GET | category | productId, startTime, endTime, limit, cursor |
+| List Coupons | `/v5/earn/coupons` | GET | category | — |
 
 **Enums**: orderType: `Stake`|`Redeem` · category: `FlexibleSaving`|`OnChain`
+
+> **Coupons** (`/v5/earn/coupons`, category: `FlexibleSaving`|`DualAssets`): returns user's `interestCards` (interest-rate coupons) and `awardCards` (Dual Assets reward cards / trial funds). Card status: `InUse`|`NotUse`|`Expired`|`AlreadyUsed`. To apply when staking, pass `interestCard:{awardId, specCode}` to `/v5/earn/place-order` (FlexibleSaving Stake) or `/v5/earn/advance/place-order` (DualAssets). Rate limit: 10 req/s (UID).
 
 ---
 
@@ -389,6 +393,44 @@ GET /v5/earn/token/history-apr?coin=BYUSDT&range=2
 | Yield History | `/v5/earn/token/yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/token/hourly-yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
 | APR History | `/v5/earn/token/history-apr` | GET | No | coin, range | — |
+
+---
+
+## Scenario: RWA Earn
+
+User might say: "RWA earn", "tokenized real-world asset", "BlackRock IGBF", "stake RWA", "redeem RWA shares", "NAV chart"
+
+> Bybit V5 RWA (Real World Asset) Earn — Stake (subscribe shares) and Redeem (redeem shares) tokenized real-world asset products. Each product holds shares of an underlying asset (e.g. IGBF) priced by NAV. Settlement is T+N, NAV-based valuation.
+
+**⚠️ Mandatory Stake/Redeem flow**
+
+> 1. `GET /v5/earn/rwa/product` → find `productId`, check `nav`, `minStakeAmount`/`maxStakeAmount`, `userQuota`, `redeemFeeRate`
+> 2. **Confirm with user** before placing: product, settlement coin, amount or shares, current NAV, expected settlement time
+> 3. `POST /v5/earn/rwa/place-order` with unique `orderLinkId` (max 36 chars, charset `[a-zA-Z0-9-_]`, required)
+> 4. Track via `GET /v5/earn/rwa/order` (poll until `status=Success` or `Failed`)
+
+```
+GET  /v5/earn/rwa/product?coin=USDC
+POST /v5/earn/rwa/place-order  {"productId":1001,"orderType":"Stake","coin":"USDC","stakeAmount":"100","accountType":"FUND","orderLinkId":"my-stake-001"}
+POST /v5/earn/rwa/place-order  {"productId":1001,"orderType":"Redeem","coin":"USDC","redeemShares":"50","accountType":"FUND","orderLinkId":"my-redeem-001"}
+GET  /v5/earn/rwa/position
+GET  /v5/earn/rwa/order?orderLinkId=my-stake-001
+GET  /v5/earn/rwa/nav-chart?productId=1001
+```
+
+| Endpoint | Path | Method | Auth | Rate | Required | Optional |
+|----------|------|--------|------|------|----------|----------|
+| Product List | `/v5/earn/rwa/product` | GET | No | 20/s IP | — | coin |
+| Place Order | `/v5/earn/rwa/place-order` | POST | Yes | 5/s UID | productId, orderType, coin, orderLinkId | stakeAmount (Stake), redeemShares (Redeem), accountType |
+| Position | `/v5/earn/rwa/position` | GET | Yes | 10/s UID | — | — |
+| Order List | `/v5/earn/rwa/order` | GET | Yes | 10/s UID | — | orderId, orderLinkId, orderType, productId, startTime, endTime, limit, cursor |
+| NAV Chart | `/v5/earn/rwa/nav-chart` | GET | No | 20/s IP | productId | startTime, endTime |
+
+**Enums**: orderType: `Stake`|`Redeem` · accountType: `FUND`(default)|`UNIFIED` · order status: `Processing`|`Success`|`Failed` · savingType: `Flexible`|`Fixed`
+
+> **Stake**: requires `stakeAmount`; deducts settlement coin from `accountType`, allocates shares at next NAV. **Redeem**: requires `redeemShares`; locks shares, refunds settlement coin to `accountType` after T+N settlement. `orderLinkId` reuse returns error `180025`. Order list: `startTime` defaults 7d ago, earliest 180d ago. NAV chart: time span ≤ 180 days; `startTime` defaults `endTime - 7d`, `endTime` defaults now.
+
+**RWA Error codes (180xxx)**: `180007` Product offline / out of subscription window · `180008` Product does not exist · `180012` Purchase share out of [min,max] range · `180013` Stake over individual maximum · `180014` Redeem share invalid · `180015` Sold out · `180016` Balance not enough · `180019` orderLinkId required · `180020` Position not found · `180022` KYC level not reached · `180025` Duplicate orderLinkId · `180029` Redeem not allowed.
 
 ---
 

@@ -149,6 +149,7 @@ POST /v5/position/trading-stop
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
 |----------|------|--------|----------------|-----------------|------------|
 | Get Position | `/v5/position/list` | GET | category | symbol, baseCoin, settleCoin, limit, cursor | linear, inverse, option |
+| Get Symbol Leverage | `/v5/position/symbol-info` | GET | category | symbol | linear, inverse |
 | Set Leverage | `/v5/position/set-leverage` | POST | category, symbol, buyLeverage, sellLeverage | — | linear, inverse |
 | Switch Position Mode | `/v5/position/switch-mode` | POST | category, mode | coin, symbol | linear, inverse |
 | Set Trading Stop | `/v5/position/trading-stop` | POST | category, symbol, tpslMode, positionIdx | takeProfit, stopLoss, trailingStop, tpTriggerBy, slTriggerBy, activePrice, tpSize, slSize, tpLimitPrice, slLimitPrice | linear, inverse |
@@ -158,6 +159,12 @@ POST /v5/position/trading-stop
 | Closed PnL | `/v5/position/closed-pnl` | GET | category, symbol | startTime, endTime, limit, cursor | linear, inverse |
 | Closed Options | `/v5/position/get-closed-positions` | GET | category | symbol, limit, cursor | option |
 | Confirm Pending MMR | `/v5/position/confirm-pending-mmr` | POST | category, symbol | — | linear, inverse |
+
+### Get Symbol Leverage (`/v5/position/symbol-info`)
+- Returns `symbol`, `leverage`, `side`, `positionIdx` per position. Hedge mode returns 2 entries per symbol (long + short).
+- `category`: `linear` (USDT perpetual / USDC contract) | `inverse` (Inverse perpetual / futures).
+- Rate limit: 2 req/s (UID). Requires Read or Write key with "Contract-position" permission.
+- **Not supported in Portfolio Margin mode** — returns `retCode=3405112`.
 
 ## Enums
 
