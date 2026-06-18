@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.4.3  # Modular Architecture + Security Baseline
+  version: 1.4.4  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-06-17
+  updated: 2026-06-18
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ FOREGROUND (main agent — immediate):
 BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
 2. SKILL_DIR = directory where this SKILL.md is located
-3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.4.3" https://api.bybit.com/skill/manifest
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.4.4" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
@@ -37,7 +37,7 @@ BACKGROUND (sub-agent — parallel):
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
    a. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/1.4.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.4.4" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
@@ -67,10 +67,25 @@ WHEN SUB-AGENT COMPLETES (main agent receives result):
 
 ### Step 1: Get an API Key
 
-1. Log in to [Bybit](https://www.bybit.com) → API Management → Create New Key
-2. Permissions: enable **Read + Trade only** (NEVER enable Withdraw for AI use)
-3. Recommended: bind your IP address (makes the key permanent; otherwise expires in 3 months)
-4. **Strongly recommended**: Create a dedicated **sub-account** for AI trading with limited balance
+Pick **one** of the two paths below. The AI Subaccount path is **strongly preferred** — it's Bybit's purpose-built account type for AI trading, with built-in cap limits and a public-key-based key flow.
+
+#### Path A — AI Subaccount (Recommended)
+
+Bybit's official AI-trading account type ([help article](https://www.bybit.com/en/help-center/article/Introduction-to-the-AI-Subaccount)).
+
+- **Create it (Bybit mobile app)**: Profile icon → **Settings → Subaccount → Create** → enter a name → select **AI Subaccount** → Confirm + security verification.
+- **Get the API key (Public Key flow)**: after creation, Bybit asks for a **Public Key**. Run your AI assistant and ask it to generate one (Claude Code, Open Claw, Cursor, etc. all support this); paste the public key into Bybit → it returns the API key + secret bound to that key. Configure them per Step 2 below.
+- **Built-in safety defaults**: **Cap Limit defaults to 5,000 USD** (adjustable from main account → Subaccount → your AI Subaccount → **More → Permissions**). API key **expires in 30 days**; for permanent keys, IP whitelist, finer permission scoping, or higher rate limits, use the Bybit **web platform** instead of the app.
+- **Why prefer this**: blast radius is bounded by the cap limit, permissions are managed centrally from the main account (Request Transfer In/Out, Move from Trading/Funding, Max Leverage, etc.), and the subaccount can be killed in one click if anything goes wrong.
+
+#### Path B — Manual API Key (Fallback)
+
+Use this only if AI Subaccount isn't available in your region or you need a non-AI key flow.
+
+1. Log in to [Bybit](https://www.bybit.com) → API Management → Create New Key (do this from inside a **Standard sub-account** if possible — never from the main account).
+2. Permissions: enable **Read + Trade only** (NEVER enable Withdraw for AI use).
+3. Bind your IP address (makes the key permanent; otherwise expires in 3 months).
+4. Fund the (sub-)account with only the amount you're willing to risk in one bad day.
 
 ### Step 2: Configure Credentials
 
@@ -230,11 +245,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.4.3" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.4.4" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/1.4.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.4.4" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -319,7 +334,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `X-BAPI-SIGN-TYPE` | `2` for RSA-SHA256; omit or set `1` for HMAC-SHA256 |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.4.3` |
+| `User-Agent` | `bybit-skill/1.4.4` |
 | `X-Referer` | `bybit-skill` |
 
 ### Signing Algorithm
@@ -377,7 +392,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.4.3" \
+  -H "User-Agent: bybit-skill/1.4.4" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -399,7 +414,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.4.3" \
+  -H "User-Agent: bybit-skill/1.4.4" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
