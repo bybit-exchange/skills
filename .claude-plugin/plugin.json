@@ -1,12 +1,14 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "bybit-trading",
+  "displayName": "Bybit Trading",
   "version": "1.4.4",
   "description": "Trade on Bybit using natural language — spot, derivatives, earn, copy trading, and more. Local HMAC signing keeps secrets on-device; mainnet writes require explicit confirmation.",
   "author": {
     "name": "Bybit",
     "url": "https://www.bybit.com"
   },
-  "homepage": "https://github.com/bybit-exchange/skills",
+  "homepage": "https://github.com/bybit-exchange/skills#readme",
   "repository": "https://github.com/bybit-exchange/skills",
   "license": "MIT",
   "keywords": [
