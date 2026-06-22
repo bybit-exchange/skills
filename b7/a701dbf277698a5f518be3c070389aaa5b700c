@@ -1,0 +1,23 @@
+.claude-plugin/plugin.json
+  955ce6c4ee9b9c37 2,4,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.9+daa2e24",
+  "base_commit_sha": "b7a701dbf277698a5f518be3c070389aaa5b700c",
+  "prompts": {
+    "955ce6c4ee9b9c37": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d4437f3f-6137-44f0-8a1b-600407d43b6a",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "paul.yang",
+      "messages": [],
+      "total_additions": 68,
+      "total_deletions": 1,
+      "accepted_lines": 68,
+      "overriden_lines": 0
+    }
+  }
+}
