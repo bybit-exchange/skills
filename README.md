@@ -14,6 +14,17 @@ Please read https://raw.githubusercontent.com/bybit-exchange/skills/main/SKILL.m
 
 The AI will download and install the skill automatically — then you can start trading in natural language. No npm packages, no CLI tools, no config files.
 
+### Claude Code (plugin marketplace)
+
+Claude Code users can install via the official community marketplace:
+
+```bash
+claude plugin marketplace add anthropics/claude-plugins-community
+claude plugin install bybit-trading@claude-community
+```
+
+This gives you versioned installs, `claude plugin update`, and namespaced skill access (`bybit-trading:bybit-trading`).
+
 ## Supported AI Platforms
 
 Works with any AI assistant that can read files or URLs:
