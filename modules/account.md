@@ -40,7 +40,7 @@ POST /v5/spot-margin-trade/fixedborrow
 
 **Query borrow liability breakdown**
 ```
-GET /v5/spot-margin-trade/Liability?currency=USDT
+GET /v5/spot-margin-trade/liability?currency=USDT
 ```
 
 **Repay with repayment type (fixed-rate liabilities only)**
@@ -140,7 +140,7 @@ POST /v5/account/repay
 | Query Fixed-Rate Borrow Market | `/v5/spot-margin-trade/fixedborrow-order-quote` | GET | orderCurrency, orderBy | term, sort, limit | — |
 | Query Fixed-Rate Borrow Orders | `/v5/spot-margin-trade/fixedborrow-order-info` | GET | — | orderId, orderCurrency, state, term, limit, cursor | — |
 | Query Fixed-Rate Borrow Contracts | `/v5/spot-margin-trade/fixedborrow-contract-info` | GET | — | orderId, orderCurrency, term, limit, cursor | — |
-| Query Borrow Liability | `/v5/spot-margin-trade/Liability` | GET | currency | — | — |
+| Query Borrow Liability | `/v5/spot-margin-trade/liability` | GET | currency | — | — |
 
 ### User (authentication required)
 
@@ -235,10 +235,9 @@ POST /v5/account/repay
 - Queries matched fixed-rate loan contract details including principal, interest, and status.
 - Supports cursor-based pagination. `limit`: 1–100, default `10`.
 
-### Query Borrow Liability (`/v5/spot-margin-trade/Liability`)
+### Query Borrow Liability (`/v5/spot-margin-trade/liability`)
 - Returns borrow liability breakdown: total, fixed-rate, flexible-rate, spot, and derivatives borrow amounts.
 - `currency` (required): Coin name (e.g. `USDT`). Unified account only.
-- Note: Path uses capital `L` in `Liability` (per BGW routing).
 
 ### Wallet Balance (`/v5/account/wallet-balance`)
 - Response coin-level field `colRes` (platform-level collateral restriction): `-1` not applicable, `0` normal, `1` restricted (reaching platform limit), `2` fully restricted (at platform limit).
