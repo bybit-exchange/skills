@@ -2,7 +2,7 @@
 
 Trade on Bybit using natural language. Tell any AI assistant one sentence, and it can execute trades, check markets, manage positions, and more — zero installation required.
 
-**Version:** 1.4.5 | **License:** MIT
+**Version:** 1.5.0 | **License:** MIT
 
 ## How It Works
 
@@ -13,17 +13,6 @@ Please read https://raw.githubusercontent.com/bybit-exchange/skills/main/SKILL.m
 ```
 
 The AI will download and install the skill automatically — then you can start trading in natural language. No npm packages, no CLI tools, no config files.
-
-### Claude Code (plugin marketplace)
-
-Claude Code users can install via the official community marketplace:
-
-```bash
-claude plugin marketplace add anthropics/claude-plugins-community
-claude plugin install bybit-trading@claude-community
-```
-
-This gives you versioned installs, `claude plugin update`, and namespaced skill access (`bybit-trading:bybit-trading`).
 
 ## Supported AI Platforms
 
