@@ -2,7 +2,9 @@
 
 This module handles one-click OAuth authorization for Bybit accounts. After authorization completes, the obtained credentials are automatically used by the Runtime Decision logic (Step 3) for all subsequent trading operations.
 
-## Bootstrap: ensure `modules/oauth.js` is present (run BEFORE any OAuth step)
+## Bootstrap: ensure `modules/oauth.js` is present
+
+**🛑 STOP — RUN THIS SECTION FIRST.** Do NOT skip to Trigger, do NOT execute any `node ... modules/oauth.js ...` command from SKILL.md, and do NOT proceed to any other step of this module until Bootstrap reports success. If Bootstrap aborts with a checksum mismatch or download failure, **STOP the entire OAuth flow** and surface the error to the user — do not fall back to other paths silently.
 
 This `.md` module relies on an executable companion at `<skill_dir>/modules/oauth.js`. The companion is **NOT delivered by the standard auto-update manifest** — it is lazy-fetched on demand with a pinned SHA256 below. This keeps the auto-update manifest `.md`-only (compatible with all historical clients) while still letting the OAuth flow obtain its executable code safely.
 
