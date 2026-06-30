@@ -1,0 +1,23 @@
+.claude-plugin/plugin.json
+  68268a58dad172f6 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.9+daa2e24",
+  "base_commit_sha": "27bbbee399d8c6736b60fdd8db00414970866780",
+  "prompts": {
+    "68268a58dad172f6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abb51cb8-6c2a-44bc-b447-93414ad16ea6",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 864,
+      "overriden_lines": 0
+    }
+  }
+}
