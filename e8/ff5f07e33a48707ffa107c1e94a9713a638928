@@ -1,0 +1,31 @@
+SKILL.md
+  68268a58dad172f6 5,7,30,34-35,40,147-160,184-189,193,269,273,302,314,319,361,419,441,470-471,739-750
+MANIFEST
+  68268a58dad172f6 11-12
+modules/oauth.md
+  68268a58dad172f6 1-379
+README.md
+  68268a58dad172f6 5
+modules/oauth.js
+  68268a58dad172f6 1-418
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.9+daa2e24",
+  "base_commit_sha": "e8ff5f07e33a48707ffa107c1e94a9713a638928",
+  "prompts": {
+    "68268a58dad172f6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "abb51cb8-6c2a-44bc-b447-93414ad16ea6",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 1712,
+      "total_deletions": 25,
+      "accepted_lines": 1712,
+      "overriden_lines": 0
+    }
+  }
+}
