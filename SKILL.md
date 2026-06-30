@@ -31,8 +31,8 @@ BACKGROUND (sub-agent — parallel):
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
-   - Does not match `SKILL.md` or `modules/<name>.<ext>` (where `<name>` is `[a-z0-9-]+` and `<ext>` is one of `md` | `js`)
-   - Contains `..`, starts with `/` or `~`, contains backslashes, or has an extension other than `.md` / `.js`
+   - Does not match `SKILL.md`, `modules/<name>.md`, or `modules/<name>.js` (where <name> is [a-z0-9-]+)
+   - Contains `..`, starts with `/` or `~`, contains backslashes, or has an extension other than `.md` or `.js`
    If any path is invalid: return {status: "error", reason: "invalid_path", path: "<rejected>"}
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
@@ -41,6 +41,9 @@ BACKGROUND (sub-agent — parallel):
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
+      - If file extension is `.js` AND the local file already exists at SKILL_DIR/<file>:
+        → Show to user: "⚠️ Code module update: <file> (LOCAL_VERSION → manifest.version). Allow? [Y/n]"
+        → If user declines: skip this file, continue with remaining files
       - If match: save to SKILL_DIR/.skill-update-tmp/<file>
    b. ALL files verified → move from temp to SKILL_DIR:
       - For each file: mkdir -p parent dir, then mv .skill-update-tmp/<file> SKILL_DIR/<file>

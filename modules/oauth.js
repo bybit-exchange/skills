@@ -347,7 +347,8 @@ async function main(args) {
   fs.mkdirSync(path.dirname(initFile), { recursive: true, mode: 0o700 });
   fs.writeFileSync(initFile, initJson, { mode: 0o600 });
 
-  process.stdout.write(initJson + "\n");
+  const { code_verifier: _cv, ...publicInitData } = initData;
+  process.stdout.write(JSON.stringify(publicInitData) + "\n");
 
   const server = http.createServer((req, res) => {
     const parsed = new URL(req.url, "http://127.0.0.1");
@@ -379,7 +380,7 @@ async function main(args) {
       fs.writeFileSync(args.output, JSON.stringify(result), { mode: 0o600 });
       process.stdout.write(JSON.stringify({ status: "ok", output_file: args.output }) + "\n");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end("授权成功！可以关闭此页面。");
+      res.end("Authorization successful! You can close this page.");
     } else {
       const errResult = { error: parsed.searchParams.get("error") || "authorization_failed" };
       fs.writeFileSync(args.output, JSON.stringify(errResult), { mode: 0o600 });
