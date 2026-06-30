@@ -8,7 +8,6 @@ modules/derivatives.md
 modules/earn.md
 modules/fiat.md
 modules/market.md
-modules/oauth.js
 modules/oauth.md
 modules/spot.md
 modules/strategy.md
