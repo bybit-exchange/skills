@@ -308,6 +308,10 @@ User might say: "bet on Argentina winning the World Cup", "buy YES on the FIFA f
 
 > Alpha Prediction Markets let users trade **YES/NO outcome shares** on real-world events (Phase 1: sports, e.g. FIFA 2026). Prices are probabilities in `[0, 1]` — a price of `0.65` means the market implies a 65% chance of that outcome. Winning shares settle to **1 USDC** each; losing shares settle to `0`. All trading is **USDC-only** on Polygon (Phase 1). All endpoints **POST** except `engine-status`, `pay-token-list`, and `sports/timeline-stages` (GET). KYC + geo-eligibility required — US and sanctioned regions are blocked.
 
+> **Environment: Mainnet only.** Prediction endpoints are not available on Bybit Testnet. If `BYBIT_ENV=testnet`, tell the user that prediction markets are mainnet-only and stop; do not attempt the call.
+
+> **Handling HTTP 403 (geo-restriction / trade ban):** buy/sell endpoints return `403` when the user's region is blocked or on-chain trading is banned. On `403`, do NOT retry. Tell the user: "This feature is not available in your region. Refer to Bybit's official announcements for the current list of restricted regions." and stop the flow.
+
 **Prediction-specific enums (from `common/enums.yaml`):**
 
 - `PredictionSide` (integer): `1` YES (buy/hold YES outcome) · `2` NO (buy/hold NO outcome). Also used as trade direction: `1` BUY, `2` SELL in order-estimate/order-list.
@@ -455,12 +459,10 @@ POST /v5/alpha/prediction/position-history  {"limit":20,"pageIndex":1}
 
 ### Prediction Error Codes
 
-Standard Alpha errors (`180000`, `180001`) still apply. Prediction-specific codes are in the `700xxx` range:
+Standard Alpha errors `180000` / `180001` still apply (see module-wide `## Error Codes (180xxx)` table below). Prediction-specific codes are in the `700xxx` range:
 
 | Code | Name | Meaning |
 |------|------|---------|
-| 180000 | ALPHA_INTERNAL_ERROR | Internal server error (Alpha domain) |
-| 180001 | ALPHA_INVALID_PARAMETER | Invalid request parameter |
 | 700001 | PREDICTION_MARKET_NOT_FOUND | Market not found or closed |
 | 700002 | PREDICTION_INSUFFICIENT_LIQUIDITY | Insufficient liquidity for FOK — order cancelled |
 | 700003 | PREDICTION_ENGINE_UNAVAILABLE | Matching engine temporarily unavailable |

@@ -469,6 +469,8 @@ Rate limit: 10 qps per UID. **Note: This is POST, not GET.**
 
 Aurora is Bybit's AI recommendation engine for trading-bot parameters. These endpoints return curated strategies (params + backtest metrics) that the user can act on directly via the corresponding bot create endpoints.
 
+> **Environment: Mainnet only.** Aurora recommendations are driven by live production data and are not available on Bybit Testnet. If `BYBIT_ENV=testnet`, tell the user that Aurora recommendations are mainnet-only and stop; do not attempt the call.
+
 > Rate limit: **20 qps per UID per path** for all Aurora endpoints. All endpoints are POST, require authentication, and use the standard bot response envelope (`status_code` / `debug_msg`).
 
 ### API Reference
