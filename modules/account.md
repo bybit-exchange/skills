@@ -141,6 +141,7 @@ POST /v5/account/repay
 | Query Fixed-Rate Borrow Orders | `/v5/spot-margin-trade/fixedborrow-order-info` | GET | — | orderId, orderCurrency, state, term, limit, cursor | — |
 | Query Fixed-Rate Borrow Contracts | `/v5/spot-margin-trade/fixedborrow-contract-info` | GET | — | orderId, orderCurrency, term, limit, cursor | — |
 | Query Borrow Liability | `/v5/spot-margin-trade/liability` | GET | currency | — | — |
+| Query Fixed-Rate Available Inventory | `/v5/spot-margin-trade/fixed-available-inventory` | GET | currency, term, annualRate | — | — |
 
 ### User (authentication required)
 
@@ -238,6 +239,15 @@ POST /v5/account/repay
 ### Query Borrow Liability (`/v5/spot-margin-trade/liability`)
 - Returns borrow liability breakdown: total, fixed-rate, flexible-rate, spot, and derivatives borrow amounts.
 - `currency` (required): Coin name (e.g. `USDT`). Unified account only.
+
+### Query Fixed-Rate Available Inventory (`/v5/spot-margin-trade/fixed-available-inventory`)
+- Queries available inventory for fixed-rate borrowing by (`currency`, `term`, `annualRate`). Unified account only.
+- `currency` (required): Uppercase coin name (e.g. `USDT`, `BTC`). Only coins supported by pledge (fixed-rate) borrowing are allowed.
+- `term` (required): Loan term in days: `7` | `14` | `30` | `90` | `180`.
+- `annualRate` (required): Annual interest rate (e.g. `0.02` = 2%).
+- Available inventory = min(market supply + finance trial (50M), UTA user remaining borrow limit). Precision: borrow precision, rounded down.
+- Response fields: `currency`, `term`, `annualRate`, `availableInventory`, `updateTime` (Unix seconds).
+- Error codes: `34022001` system error, `34022008` invalid parameters / blank currency, `34022039` unsupported business type.
 
 ### Wallet Balance (`/v5/account/wallet-balance`)
 - Response coin-level field `colRes` (platform-level collateral restriction): `-1` not applicable, `0` normal, `1` restricted (reaching platform limit), `2` fully restricted (at platform limit).

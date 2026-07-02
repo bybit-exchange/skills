@@ -383,6 +383,13 @@ GET /v5/earn/token/hourly-yield?coin=BYUSDT
 GET /v5/earn/token/history-apr?coin=BYUSDT&range=2
 ```
 > Yield/hourly-yield timestamps in **seconds**. APR history: `range`(1=7d, 2=30d, 3=180d), timestamps in **milliseconds**.
+>
+> **Order List response fields** — each entry includes `orderId`, `orderLinkId`, `orderType` (`Mint`|`Redeem`), `fromCoin`, `toCoin`, `fromAmount`, `toAmount`, `serviceFee`, `status` (`Success`|`Fail`|`Processing`), `createdTime`, plus:
+> - `fromAccount`: `FlexibleSaving`|`UNIFIED`|`TRADFI` — Mint=`FlexibleSaving`; Redeem=`UNIFIED`; TradFi-originated Redeem=`TRADFI`
+> - `toAccount`: `FlexibleSaving`|`UNIFIED`|`TRADFI` — Mint=`UNIFIED`; Redeem=`FlexibleSaving`; TradFi-originated Redeem=`TRADFI`
+> - `externalEventType`: `""`|`RPL_CLOSE`|`COMMISSION`|`DIVIDEND`|`ROLLOVER`|`RISK_ADJUSTMENT` — empty for user-initiated `Mint`/`Redeem`; populated only when the redemption was triggered by an external TradFi (MT5) account event: `RPL_CLOSE` (realised PnL on position close, includes swap / overnight fee), `COMMISSION` (position-open commission), `DIVIDEND` (index dividend distribution), `ROLLOVER` (contract rollover), `RISK_ADJUSTMENT` (risk-control adjustment)
+>
+> **Note**: TradFi-originated balance changes (close-PnL, commission, dividend, etc.) are also surfaced under `orderType=Redeem`. Use `externalEventType` to distinguish a TradFi-driven redemption from a user-initiated one.
 
 | Endpoint | Path | Method | Auth | Required | Optional |
 |----------|------|--------|------|----------|----------|
