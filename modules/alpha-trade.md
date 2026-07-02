@@ -310,6 +310,8 @@ User might say: "bet on Argentina winning the World Cup", "buy YES on the FIFA f
 
 > **Testnet caveat.** Prediction is a Phase 1 mainnet product; testnet coverage is unverified. If a Prediction endpoint returns `404` / permission errors on `BYBIT_ENV=testnet`, don't retry — tell the user Prediction may not be available on testnet and suggest switching to mainnet. Do NOT preemptively block the call.
 
+> **Event-type freshness.** `FIFA_2026` (`eventType=1`) is used throughout this section as illustrative Phase 1 content — the FIFA 2026 World Cup runs June–July 2026. After the tournament ends, active events and market IDs will change; **never hard-code `eventId` / `tokenId` / market slugs**. Always call `sports/match-list` or `side-market-list` to discover currently live markets before quoting or trading.
+
 > **Handling HTTP 403 (geo-restriction / trade ban):** buy/sell endpoints return `403` when the user's region is blocked or on-chain trading is banned. On `403`, do NOT retry. Tell the user: "This feature is not available in your region. Refer to Bybit's official announcements for the current list of restricted regions." and stop the flow.
 
 **Prediction-specific enums (from `common/enums.yaml`):**
@@ -423,7 +425,7 @@ POST /v5/alpha/prediction/order-list
 
 | Endpoint | Path | Method | Required | Optional |
 |----------|------|--------|----------|----------|
-| Order Estimate | `/v5/alpha/prediction/order-estimate` | POST | tokenId, side, eventId, amount, orderType | payTokenCode |
+| Order Estimate | `/v5/alpha/prediction/order-estimate` | POST | tokenId, side, eventId, amount, orderType, payTokenCode (BUY only) | — |
 | Buy | `/v5/alpha/prediction/buy` | POST | tokenId, amount, payTokenCode, orderType, slippage, eventId | — |
 | Sell | `/v5/alpha/prediction/sell` | POST | tokenId, size, orderType, slippage, eventId | toTokenCode |
 | Order List | `/v5/alpha/prediction/order-list` | POST | — | status, tokenId, limit, pageIndex, eventId, side, days |
