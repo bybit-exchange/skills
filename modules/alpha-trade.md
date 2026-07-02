@@ -308,7 +308,7 @@ User might say: "bet on Argentina winning the World Cup", "buy YES on the FIFA f
 
 > Alpha Prediction Markets let users trade **YES/NO outcome shares** on real-world events (Phase 1: sports, e.g. FIFA 2026). Prices are probabilities in `[0, 1]` — a price of `0.65` means the market implies a 65% chance of that outcome. Winning shares settle to **1 USDC** each; losing shares settle to `0`. All trading is **USDC-only** on Polygon (Phase 1). All endpoints **POST** except `engine-status`, `pay-token-list`, and `sports/timeline-stages` (GET). KYC + geo-eligibility required — US and sanctioned regions are blocked.
 
-> **Environment: Mainnet only.** Prediction endpoints are not available on Bybit Testnet. If `BYBIT_ENV=testnet`, tell the user that prediction markets are mainnet-only and stop; do not attempt the call.
+> **Testnet caveat.** Prediction is a Phase 1 mainnet product; testnet coverage is unverified. If a Prediction endpoint returns `404` / permission errors on `BYBIT_ENV=testnet`, don't retry — tell the user Prediction may not be available on testnet and suggest switching to mainnet. Do NOT preemptively block the call.
 
 > **Handling HTTP 403 (geo-restriction / trade ban):** buy/sell endpoints return `403` when the user's region is blocked or on-chain trading is banned. On `403`, do NOT retry. Tell the user: "This feature is not available in your region. Refer to Bybit's official announcements for the current list of restricted regions." and stop the flow.
 

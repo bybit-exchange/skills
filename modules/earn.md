@@ -389,7 +389,7 @@ GET /v5/earn/token/history-apr?coin=BYUSDT&range=2
 > - `toAccount`: `FlexibleSaving`|`UNIFIED`|`TRADFI` — Mint=`UNIFIED`; Redeem=`FlexibleSaving`; TradFi-originated Redeem=`TRADFI`
 > - `externalEventType`: `""`|`RPL_CLOSE`|`COMMISSION`|`DIVIDEND`|`ROLLOVER`|`RISK_ADJUSTMENT` — empty for user-initiated `Mint`/`Redeem`; populated only when the redemption was triggered by an external TradFi (MT5) account event: `RPL_CLOSE` (realised PnL on position close, includes swap / overnight fee), `COMMISSION` (position-open commission), `DIVIDEND` (index dividend distribution), `ROLLOVER` (contract rollover), `RISK_ADJUSTMENT` (risk-control adjustment)
 >
-> **Note**: TradFi-originated balance changes (close-PnL, commission, dividend, etc.) are also surfaced under `orderType=Redeem`. Use `externalEventType` to distinguish a TradFi-driven redemption from a user-initiated one. **TradFi is Mainnet-only** — `fromAccount=TRADFI` / `toAccount=TRADFI` and any non-empty `externalEventType` will never appear on Testnet.
+> **Note**: TradFi-originated balance changes (close-PnL, commission, dividend, etc.) are also surfaced under `orderType=Redeem`. Use `externalEventType` to distinguish a TradFi-driven redemption from a user-initiated one. TradFi (MT5) integration lives on mainnet; testnet coverage is unverified — if `TRADFI` account values or non-empty `externalEventType` never surface on `BYBIT_ENV=testnet`, that's expected, not a bug.
 
 | Endpoint | Path | Method | Auth | Required | Optional |
 |----------|------|--------|------|----------|----------|
