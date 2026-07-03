@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.5.1  # Modular Architecture + Security Baseline
+  version: 1.5.2  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-06-30
+  updated: 2026-07-02
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ FOREGROUND (main agent — immediate):
 BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
 2. SKILL_DIR = directory where this SKILL.md is located
-3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.1" https://api.bybit.com/skill/manifest
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.2" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
@@ -37,7 +37,7 @@ BACKGROUND (sub-agent — parallel):
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
    a. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/1.5.1" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.5.2" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
@@ -271,11 +271,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.1" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.2" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/1.5.1" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.5.2" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -300,7 +300,8 @@ Tell the user what they can do. Examples:
 | P2P, peer to peer, advertisement, ad, OTC, fiat, fiat buy, fiat sell, convert fiat | **fiat** | `modules/fiat.md` | — |
 | copy trading, leader, follower, copy trade, leaderboard, recommend trader | **copy-trading** | `modules/copy-trading.md` | derivatives, account |
 | grid bot, DCA bot, martingale, combo bot, trading bot, create bot, close bot | **trading-bot** | `modules/trading-bot.md` | account, derivatives |
-| alpha, on-chain, DEX, meme coin, swap token, on-chain asset, token trade | **alpha-trade** | `modules/alpha-trade.md` | account |
+| aurora, AI recommendation, strategy recommend, bot recommend, one-click bot, home picks, EasyBot, refetch strategy | **aurora** | `modules/aurora.md` | trading-bot |
+| alpha, on-chain, DEX, meme coin, swap token, on-chain asset, token trade, prediction, prediction market, bet, betting, YES/NO, sports market, World Cup, FIFA, event trading | **alpha-trade** | `modules/alpha-trade.md` | account |
 | TWAP, iceberg, chase order, chaseOrder, strategy order, split order, algorithmic, POV, percentage of volume, volume participation | **strategy** | `modules/strategy.md` | account |
 | xStocks, tokenized stock, commodity perpetual, XAUUSDT, XAGUSDT, CLUSDT, crude oil, TradFi, metals agreement, oil agreement | **tradfi** | `modules/tradfi.md` | account, spot, derivatives |
 | card, bybit card, card transaction, card spending, card payment, card history | **card** | `modules/card.md` | account |
@@ -310,7 +311,7 @@ Tell the user what they can do. Examples:
 
 - **Derivatives**: Conditional orders require `triggerDirection`: `1`=price rises above trigger, `2`=price falls below trigger. Buy-the-dip → `2`, breakout buy → `1`.
 - **Fiat/P2P**: P2P responses use `ret_code` (underscore format, not `retCode`). P2P ad posting requires General Advertiser+ permission level.
-- **Spot ↔ Convert fallback**: Spot order endpoints (`/v5/order/create`) only support listed spot pairs (base + quote where quote ∈ `USDT`/`USDC`/`USDE`/`BTC`/`ETH`/`EUR`/`BRL`). If the user names a base-base pair (e.g., `BTCDOGE`, `ETHSOL`, `SOLPEPE`) or any pair you cannot confirm is a listed spot symbol, **do NOT call spot order create**. Route to Flash Convert via the `/v5/asset/exchange/*` endpoints in the account module: (1) `query-coin-list` to confirm both coins are convertible, (2) `quote-apply` to lock a quote, (3) user `CONFIRM`, (4) `convert-execute` before the quote expires (typically ~5s). When suggesting this fallback, tell the user that the pair is not a listed spot symbol and propose Flash Convert instead — surface `fromCoin`, `toCoin`, `requestAmount`, quote price, and `expireTime` in the confirmation.
+- **Spot ↔ Convert fallback**: Spot order endpoints (`/v5/order/create`) only support listed spot pairs (base + quote where quote ∈ `USDT`/`USDC`/`USDE`/`BTC`/`ETH`/`EUR`/`BRL`). If the user names a base-base pair (e.g., `BTCDOGE`, `ETHSOL`, `SOLPEPE`) or any pair you cannot confirm is a listed spot symbol, **do NOT call spot order create**. Route to Convert via the `/v5/asset/exchange/*` endpoints in the account module: (1) `query-coin-list` to confirm both coins are convertible, (2) `quote-apply` to lock a quote, (3) user `CONFIRM`, (4) `convert-execute` before the quote expires (typically ~5s). When suggesting this fallback, tell the user that the pair is not a listed spot symbol and propose Convert instead — surface `fromCoin`, `toCoin`, `requestAmount`, quote price, and `expireTime` in the confirmation.
 - **Trading Bot**: Bot API uses `status_code`/`debug_msg` response format (NOT `retCode`/`retMsg`). **Always call `validate-input` (spot grid) or `validate` (futures grid) before creation** — this returns acceptable parameter ranges and catches errors early. DCA: max **5 trading pairs** per bot; if user requests more, ask them to choose up to 5.
 - **Alpha Trade**: Uses a **quote-then-execute** model — always call `/v5/alpha/trade/quote` first. Token codes use `CEX_<id>` (payment tokens like USDT) and `DEX_<id>` (on-chain tokens). All endpoints are POST (including queries). Settlement is on-chain (10-60s). KYC required.
 - **Strategy**: Strategy API uses `UTA_*` category format ONLY. Do NOT use `linear`/`spot` — map: `linear` → `UTA_USDT`, `spot` → `UTA_SPOT`, `inverse` → `UTA_INVERSE`. Chase orders: `chaseDistance` and `chasePercentE4` are **mutually exclusive** — use ONE only. **NEVER use `category=linear` or `category=spot` in Strategy API calls** — this will cause errors. Always translate: derivatives/perpetual/futures → `UTA_USDT`, spot → `UTA_SPOT`. **POV** (Percentage of Volume): adapts child order size to live market activity; only supports Perp (NOT spot).
@@ -321,7 +322,7 @@ Tell the user what they can do. Examples:
 ### Routing Notes
 
 - Keywords are **hints, not strict rules** — always use semantic understanding of the user's full request to determine the correct module(s). When ambiguous (e.g., "borrow" could mean spot margin or advanced lending), prefer the module matching the broader conversation context, or ask the user to clarify.
-- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA → trading-bot, 链上/meme/DEX/代币 → alpha-trade, 代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 授权/登录/连接Bybit/OAuth → oauth
+- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA → trading-bot, AI推荐/一键创建/策略推荐/Aurora → aurora, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 授权/登录/连接Bybit/OAuth → oauth
 
 ### Loading Rules
 
@@ -363,7 +364,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `X-BAPI-SIGN-TYPE` | `2` for RSA-SHA256; omit or set `1` for HMAC-SHA256 |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.5.1` |
+| `User-Agent` | `bybit-skill/1.5.2` |
 | `X-Referer` | `bybit-skill` |
 
 ### Signing Algorithm
@@ -421,7 +422,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.5.1" \
+  -H "User-Agent: bybit-skill/1.5.2" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -443,7 +444,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.5.1" \
+  -H "User-Agent: bybit-skill/1.5.2" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
