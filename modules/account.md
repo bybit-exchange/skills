@@ -51,6 +51,50 @@ POST /v5/account/repay
 
 ---
 
+## Insufficient Balance — Transfer Guide
+
+When an operation fails due to insufficient balance, assist the user by checking if funds are available elsewhere.
+
+### Behavior
+
+```
+Operation fails: insufficient balance
+    |
+    v
+Step 1: Check sub-account funding account
+  ├── Has enough → inform user and ask if they want to transfer
+  └── Not enough → continue
+    |
+    v
+Step 2: Check master funding account
+  ├── Has enough → inform user and ask if they want to transfer
+  └── Not available → continue
+    |
+    v
+Step 3: No available source found
+  → Report insufficient balance only. No further guidance.
+```
+
+### Rules
+
+1. Only check sub-account internal balance and master funding account.
+2. If funds are found: inform user, wait for explicit transfer request before executing.
+3. If no funds found or unable to determine: report "insufficient balance" only — no suggestions, no app links.
+4. This guide does not modify existing transfer execution behavior. User-initiated transfers execute as normal regardless of source.
+
+### Permission Error Handling
+
+When a transfer fails due to permission restrictions, the permission name can be identified from the error response:
+
+| retCode | Blocked Permission |
+|---------|--------------------|
+| 131234  | Transfer In        |
+| 131235  | Transfer Out       |
+
+Guide the user to enable the corresponding permission in App settings.
+
+---
+
 ## API Reference
 
 ### Account (authentication required)
@@ -131,7 +175,7 @@ POST /v5/account/repay
 | Portfolio Margin | `/v5/asset/portfolio-margin` | GET | — | baseCoin | — |
 | Total Members Assets | `/v5/asset/total-members-assets` | GET | — | coin | — |
 
-### Spot Margin Trade – Fixed-Rate Borrow (authentication required, Unified account only)
+### Spot Margin Trade — Fixed-Rate Borrow (authentication required, Unified account only)
 
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
 |----------|------|--------|----------------|-----------------|------------|
@@ -225,16 +269,16 @@ POST /v5/account/repay
 ### Query Fixed-Rate Borrow Market (`/v5/spot-margin-trade/fixedborrow-order-quote`)
 - Queries the fixed-rate lending supply order book.
 - `orderCurrency` (required): Coin name. `orderBy` (required): `apy` | `term` | `quantity`.
-- `sort`: `0` (ascending, default) | `1` (descending). `limit`: 1–100, default `10`.
+- `sort`: `0` (ascending, default) | `1` (descending). `limit`: 1-100, default `10`.
 
 ### Query Fixed-Rate Borrow Orders (`/v5/spot-margin-trade/fixedborrow-order-info`)
 - Queries fixed-rate borrow order history.
 - `state`: `1` (matching) | `2` (partially filled & cancelled) | `3` (fully filled) | `4` (cancelled).
-- Supports cursor-based pagination. `limit`: 1–100, default `10`.
+- Supports cursor-based pagination. `limit`: 1-100, default `10`.
 
 ### Query Fixed-Rate Borrow Contracts (`/v5/spot-margin-trade/fixedborrow-contract-info`)
 - Queries matched fixed-rate loan contract details including principal, interest, and status.
-- Supports cursor-based pagination. `limit`: 1–100, default `10`.
+- Supports cursor-based pagination. `limit`: 1-100, default `10`.
 
 ### Query Borrow Liability (`/v5/spot-margin-trade/liability`)
 - Returns borrow liability breakdown: total, fixed-rate, flexible-rate, spot, and derivatives borrow amounts.
@@ -259,7 +303,7 @@ POST /v5/account/repay
 
 ### Affiliate Sub List (`/v5/affiliate/affiliate-sub-list`)
 - Query sub-affiliates with optional commission date range (`startDate`/`endDate` in YYYY-MM-DD format).
-- `size`: 0–100 (0 = all, up to 100). Rate limit: 10 req/s. Requires Master UID with affiliate permission.
+- `size`: 0-100 (0 = all, up to 100). Rate limit: 10 req/s. Requires Master UID with affiliate permission.
 
 ### Set Margin Mode (`/v5/account/set-margin-mode`)
 - Error code `3200425`: Cannot switch to Portfolio Margin (PM) mode while holding an Event Futures position. Close the position before switching.
@@ -270,8 +314,8 @@ POST /v5/account/repay
 
 ## Enums
 
-* **accountType**: `UNIFIED` | `FUND` | `SPOT` | `CONTRACT` | `INVESTMENT` | `OPTION`
-* **collateralSwitch**: `ON` | `OFF`
-* **frozen** (sub account): `0` (unfreeze) | `1` (freeze)
-* **memberType** (sub account): `1` (normal) | `6` (custodial)
-* **repaymentType**: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`)
+- **accountType**: `UNIFIED` | `FUND` | `SPOT` | `CONTRACT` | `INVESTMENT` | `OPTION`
+- **collateralSwitch**: `ON` | `OFF`
+- **frozen** (sub account): `0` (unfreeze) | `1` (freeze)
+- **memberType** (sub account): `1` (normal) | `6` (custodial)
+- **repaymentType**: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`)
