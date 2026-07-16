@@ -6,6 +6,8 @@
  *
  * Usage:
  *   node oauth.js --port 9876 --env unify-test-3
+ *   node oauth.js --headless --env mainnet
+ *   node oauth.js --manual-code <code> --init-file <path> --env mainnet
  *   node oauth.js --exchange /tmp/oauth_callback.json --env mainnet
  *   node oauth.js --exchange /tmp/oauth_callback.json --env mainnet --sub-member-id 123456
  *   node oauth.js --exchange /tmp/oauth_callback.json --env mainnet --is-create
@@ -46,6 +48,8 @@ const HOSTS = {
 };
 
 function getCredentialPath() {
+  const override = process.env.BYBIT_CRED_DIR;
+  if (override) return path.join(override, "oauth_token.json");
   if (process.platform === "win32") {
     const base = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
     return path.join(base, "bybit", "oauth_token.json");
@@ -289,7 +293,7 @@ async function exchangeAndSave(args) {
 }
 
 function parseArgs() {
-  const args = { port: 9876, output: getDefaultOutputPath(), env: "unify-test-3", exchange: null, subMemberId: null, isCreate: false };
+  const args = { port: 9876, output: getDefaultOutputPath(), env: "unify-test-3", exchange: null, subMemberId: null, isCreate: false, headless: false, manualCode: null, initFile: null };
   for (let i = 2; i < process.argv.length; i++) {
     if (process.argv[i] === "--port" && process.argv[i + 1]) {
       args.port = parseInt(process.argv[++i], 10);
@@ -303,6 +307,12 @@ function parseArgs() {
       args.subMemberId = process.argv[++i];
     } else if (process.argv[i] === "--is-create") {
       args.isCreate = true;
+    } else if (process.argv[i] === "--headless") {
+      args.headless = true;
+    } else if (process.argv[i] === "--manual-code" && process.argv[i + 1]) {
+      args.manualCode = process.argv[++i];
+    } else if (process.argv[i] === "--init-file" && process.argv[i + 1]) {
+      args.initFile = process.argv[++i];
     }
   }
   if (!HOSTS[args.env]) {
@@ -310,6 +320,87 @@ function parseArgs() {
     process.exit(1);
   }
   return args;
+}
+
+function getInitFilePath(outputPath) {
+  const replaced = outputPath.replace(/\.json$/i, "_init.json");
+  return replaced === outputPath ? outputPath + "_init.json" : replaced;
+}
+
+const HEADLESS_REDIRECT_URIS = {
+  mainnet: "https://www.bybit.com/oauth/callback",
+  testnet: "https://testnet.bybit.com/oauth/callback",
+  "unify-test-3": "https://www.unify-test-3.bybit.com/oauth/callback",
+};
+
+async function headlessMode(args) {
+  const codeVerifier = generateCodeVerifier();
+  const codeChallenge = generateCodeChallenge(codeVerifier);
+  const state = crypto.randomBytes(8).toString("hex");
+
+  const host = HOSTS[args.env];
+  const redirectUri = HEADLESS_REDIRECT_URIS[args.env];
+  const authorizeUrl =
+    `${host.authorize}` +
+    `?client_id=${CLIENT_ID}` +
+    `&response_type=code` +
+    `&scope=ai-account` +
+    `&state=${state}` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+    `&code_challenge=${codeChallenge}` +
+    `&code_challenge_method=S256`;
+
+  const initData = {
+    authorize_url: authorizeUrl,
+    code_verifier: codeVerifier,
+    state: state,
+    headless: true,
+    output_file: args.output,
+    credential_path: getCredentialPath(),
+  };
+
+  const initFile = getInitFilePath(args.output);
+  fs.mkdirSync(path.dirname(initFile), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(initFile, JSON.stringify(initData), { mode: 0o600 });
+
+  const { code_verifier: _cv, ...publicData } = initData;
+  publicData.init_file = initFile;
+  process.stdout.write(JSON.stringify(publicData) + "\n");
+  process.exit(0);
+}
+
+async function manualCodeMode(args) {
+  if (!args.manualCode || !args.manualCode.trim()) {
+    process.stdout.write(JSON.stringify({ success: false, error: "empty_code", message: "Authorization code cannot be empty" }) + "\n");
+    process.exit(1);
+  }
+  args.manualCode = args.manualCode.trim();
+
+  const initFile = args.initFile;
+  if (!initFile || !fs.existsSync(initFile)) {
+    process.stdout.write(JSON.stringify({ success: false, error: "init_file_not_found", message: `Init file not found: ${initFile}` }) + "\n");
+    process.exit(1);
+  }
+
+  const initData = JSON.parse(fs.readFileSync(initFile, "utf8"));
+  if (!initData.code_verifier) {
+    process.stdout.write(JSON.stringify({ success: false, error: "invalid_init_file", message: "Missing code_verifier in init file" }) + "\n");
+    process.exit(1);
+  }
+
+  const result = {
+    code: args.manualCode,
+    client_id: CLIENT_ID,
+    code_verifier: initData.code_verifier,
+    state: initData.state,
+  };
+
+  const outputFile = initData.output_file || args.output;
+  fs.mkdirSync(path.dirname(outputFile), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(outputFile, JSON.stringify(result), { mode: 0o600 });
+
+  process.stdout.write(JSON.stringify({ success: true, step: "code_saved", output_file: outputFile }) + "\n");
+  process.exit(0);
 }
 
 async function main(args) {
@@ -341,9 +432,7 @@ async function main(args) {
   };
   const initJson = JSON.stringify(initData);
 
-  const initFile = args.output.replace(/\.json$/i, "_init.json") === args.output
-    ? args.output + "_init.json"
-    : args.output.replace(/\.json$/i, "_init.json");
+  const initFile = getInitFilePath(args.output);
   fs.mkdirSync(path.dirname(initFile), { recursive: true, mode: 0o700 });
   fs.writeFileSync(initFile, initJson, { mode: 0o600 });
 
@@ -409,7 +498,16 @@ async function main(args) {
 
 if (require.main === module) {
   const args = parseArgs();
-  const run = args.exchange ? exchangeAndSave(args) : main(args);
+  let run;
+  if (args.exchange) {
+    run = exchangeAndSave(args);
+  } else if (args.headless) {
+    run = headlessMode(args);
+  } else if (args.manualCode) {
+    run = manualCodeMode(args);
+  } else {
+    run = main(args);
+  }
   run.catch((err) => {
     process.stderr.write(err.message + "\n");
     process.exit(1);

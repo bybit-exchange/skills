@@ -149,7 +149,7 @@ On first use:
 
 **Path D — OAuth (one-click authorization)**:
 
-For AI assistants with shell access (Claude Code, Cursor, etc.), the OAuth flow lets users authorize their Bybit account with a single click — no manual key creation needed. This uses the `oauth/` module bundled with this skill.
+For AI assistants with shell access (Claude Code, Cursor, OpenClaw, etc.), the OAuth flow lets users authorize their Bybit account with a single click — no manual key creation needed. This uses the `oauth/` module bundled with this skill. Cloud agents (OpenClaw, remote servers) automatically use headless mode — the user pastes the authorization code from the popup instead of relying on a localhost callback.
 
 **⚠️ MANDATORY first step for Path D**: load `modules/oauth.md` and execute its **Bootstrap** section. The OAuth executable (`modules/oauth.js`) is NOT delivered by auto-update — it is lazy-fetched from raw.github with a SHA256-pinned check inside `oauth.md`. Without running Bootstrap first, every `node ... modules/oauth.js ...` command below will fail with `Cannot find module` on fresh installs. **Do NOT run the credential check below until Bootstrap reports success.**
 

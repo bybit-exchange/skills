@@ -11,7 +11,7 @@ This `.md` module relies on an executable companion at `<skill_dir>/modules/oaut
 **Pinned SHA256** (this is the SINGLE source of truth for what `oauth.js` content is accepted):
 
 ```
-oauth.js.sha256 = 8f0cbe88b95ddf832eb0cf3d644d105918355182333c0f549508ea52f6b7458b
+oauth.js.sha256 = dc49e997e805aeb1ca4d517b114dfa72a6bdb3f0d5b609c554d2e28c26515ec2
 oauth.js.url    = https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/oauth.js
 ```
 
@@ -77,6 +77,22 @@ export CRED_PATH=$(node -e "console.log(require('<skill_dir>/modules/oauth.js').
 Read the file at that path. If it exists and the token has not expired (`Math.floor(Date.now()/1000) - created_at < expires_in`), use it directly — no re-authorization needed.
 
 If a token exists but `ai-account` credentials are missing, skip to OAuth Step 6.
+
+## OAuth Step 1.5: Environment Detection
+
+Before starting the OAuth flow, determine whether a local callback server can be reached by the user's browser.
+
+**Cloud/headless environment** (any of the following):
+- Environment variable `OPENCLAW=1` or `CLOUD_AGENT=1` is set
+- File `/.dockerenv` exists AND the agent cannot open a browser on the user's machine
+- Hostname contains cloud platform identifiers (e.g., `openclaw-`, `codex-`)
+- User explicitly states they are on a cloud agent or cannot open localhost links
+
+**If cloud/headless → go to [OAuth Step H1 (Headless Mode)](#oauth-step-h1-headless-mode)**
+
+**Otherwise → continue to OAuth Step 2 below (local callback server)**
+
+---
 
 ## OAuth Step 2: Start callback server (background)
 
@@ -407,3 +423,70 @@ node -e "console.log(require('<skill_dir>/modules/oauth.js').getCredentialPath()
 File contents include:
 - `access_token` — for calling OAuth-protected endpoints
 - `ai-account.api_key` + `ai-account.api_secret` — for calling Bybit Open API directly (used by Runtime Decision in Step 3)
+
+If `BYBIT_CRED_DIR` environment variable is set, credentials are stored at `$BYBIT_CRED_DIR/oauth_token.json` instead of the default platform path. Cloud platforms should set this to a user-scoped directory for data isolation in shared environments.
+
+---
+
+## OAuth Step H1 (Headless Mode)
+
+This path is used when the agent runs in a cloud environment and cannot start a local callback server (see Step 1.5).
+
+Generate PKCE parameters and authorization URL without starting a server:
+
+```bash
+node <skill_dir>/modules/oauth.js --headless --env <resolved_env>
+```
+
+The script outputs a JSON line to stdout:
+```json
+{"authorize_url": "...", "headless": true, "output_file": "...", "credential_path": "...", "init_file": "...", "state": "..."}
+```
+
+It also saves `code_verifier` securely to the `init_file` path (permission 0600). The script exits immediately — no server is started.
+
+## OAuth Step H2: Display authorization link and wait for user input
+
+Output the authorization link with the following prompt (render in the language of the user's most recent message):
+
+```
+[<ENV>] Please click the following link to authorize your Bybit account:
+<authorize_url>
+
+After authorization, a popup will display your authorization code.
+If you're in a local environment, no action needed — the system will handle the callback automatically.
+If you're on a cloud agent (e.g., OpenClaw), please copy the code and paste it back here.
+```
+
+**Wait for the user to reply with the authorization code.** Do NOT poll, do NOT end turn with a background command. The user will paste the code in the next message.
+
+## OAuth Step H3: Process manually-provided code
+
+Once the user provides the authorization code, write it to the callback file using the init_file:
+
+```bash
+node <skill_dir>/modules/oauth.js --manual-code "<user_provided_code>" --init-file "<init_file_path>" --env <resolved_env>
+```
+
+This reads `code_verifier` from the init file and writes the callback file in the same format as the local server would (`{ code, client_id, code_verifier, state }`).
+
+On success, output: `{"success": true, "step": "code_saved", "output_file": "..."}`
+
+## OAuth Step H4: Exchange and continue
+
+After the callback file is written, proceed with token exchange exactly as in **OAuth Step 5**:
+
+```bash
+node <skill_dir>/modules/oauth.js --exchange "<output_file>" --env <resolved_env>
+```
+
+From here, the flow merges back to the standard path: Step 5 → Step 6 → Step 7 → Step 8. All rules (MANDATORY no-auto-select, error handling, secret redaction) apply identically.
+
+## OAuth: Data Isolation (Cloud Environments)
+
+In cloud deployments where multiple users run on the same host infrastructure:
+
+- **Pod-level isolation** (e.g., OpenClaw, K8s): each user gets a dedicated container with its own filesystem. No additional configuration needed — the default `~/.bybit/` path is already user-scoped.
+- **Shared-host environments**: set `BYBIT_CRED_DIR` to a user-scoped directory (e.g., `/data/<user_id>/.bybit/`). The platform is responsible for setting this env var per user session.
+- **Security guarantees**: credential files are created with permission 0600 (owner-only read/write), directories with 0700. The `code_verifier` is never output to stdout in headless mode — only stored in the init file.
+- **No cross-user leakage**: each OAuth session generates a unique PKCE pair (code_verifier + code_challenge). A code exchanged with the wrong code_verifier will fail with `code_verify_err`. Even if two users share a filesystem (misconfiguration), they cannot use each other's authorization codes.
