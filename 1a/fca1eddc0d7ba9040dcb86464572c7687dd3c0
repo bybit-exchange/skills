@@ -1,0 +1,27 @@
+SKILL.md
+  1c601969dece7fc2 152
+modules/oauth.js
+  1c601969dece7fc2 9-10,51-52,296,310-315,325-405,435,501-510
+modules/oauth.md
+  1c601969dece7fc2 14,81-96,426-492
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.10+672fbf0",
+  "base_commit_sha": "1afca1eddc0d7ba9040dcb86464572c7687dd3c0",
+  "prompts": {
+    "1c601969dece7fc2": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eb294f7c-a7fd-4a40-9481-4b413e2e30e7",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 1071,
+      "total_deletions": 21,
+      "accepted_lines": 1057,
+      "overriden_lines": 0
+    }
+  }
+}
