@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.5.3  # Modular Architecture + Security Baseline
+  version: 1.5.4  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-07-07
+  updated: 2026-07-16
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ FOREGROUND (main agent — immediate):
 BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
 2. SKILL_DIR = directory where this SKILL.md is located
-3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.3" https://api.bybit.com/skill/manifest
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.4" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
@@ -37,7 +37,7 @@ BACKGROUND (sub-agent — parallel):
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
    a. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/1.5.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.5.4" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
@@ -149,7 +149,7 @@ On first use:
 
 **Path D — OAuth (one-click authorization)**:
 
-For AI assistants with shell access (Claude Code, Cursor, etc.), the OAuth flow lets users authorize their Bybit account with a single click — no manual key creation needed. This uses the `oauth/` module bundled with this skill.
+For AI assistants with shell access (Claude Code, Cursor, OpenClaw, etc.), the OAuth flow lets users authorize their Bybit account with a single click — no manual key creation needed. This uses the `oauth/` module bundled with this skill. Cloud agents (OpenClaw, remote servers) automatically use headless mode — the user pastes the authorization code from the popup instead of relying on a localhost callback.
 
 **⚠️ MANDATORY first step for Path D**: load `modules/oauth.md` and execute its **Bootstrap** section. The OAuth executable (`modules/oauth.js`) is NOT delivered by auto-update — it is lazy-fetched from raw.github with a SHA256-pinned check inside `oauth.md`. Without running Bootstrap first, every `node ... modules/oauth.js ...` command below will fail with `Cannot find module` on fresh installs. **Do NOT run the credential check below until Bootstrap reports success.**
 
@@ -271,11 +271,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.3" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.5.4" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/1.5.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.5.4" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -300,7 +300,6 @@ Tell the user what they can do. Examples:
 | P2P, peer to peer, advertisement, ad, OTC, fiat, fiat buy, fiat sell, convert fiat | **fiat** | `modules/fiat.md` | — |
 | copy trading, leader, follower, copy trade, leaderboard, recommend trader | **copy-trading** | `modules/copy-trading.md` | derivatives, account |
 | grid bot, DCA bot, martingale, combo bot, trading bot, create bot, close bot | **trading-bot** | `modules/trading-bot.md` | account, derivatives |
-| aurora, AI recommendation, strategy recommend, bot recommend, one-click bot, home picks, EasyBot, refetch strategy | **aurora** | `modules/aurora.md` | trading-bot |
 | alpha, on-chain, DEX, meme coin, swap token, on-chain asset, token trade, prediction, prediction market, bet, betting, YES/NO, sports market, World Cup, FIFA, event trading | **alpha-trade** | `modules/alpha-trade.md` | account |
 | TWAP, iceberg, chase order, chaseOrder, strategy order, split order, algorithmic, POV, percentage of volume, volume participation | **strategy** | `modules/strategy.md` | account |
 | xStocks, tokenized stock, commodity perpetual, XAUUSDT, XAGUSDT, CLUSDT, crude oil, TradFi, metals agreement, oil agreement | **tradfi** | `modules/tradfi.md` | account, spot, derivatives |
@@ -322,7 +321,7 @@ Tell the user what they can do. Examples:
 ### Routing Notes
 
 - Keywords are **hints, not strict rules** — always use semantic understanding of the user's full request to determine the correct module(s). When ambiguous (e.g., "borrow" could mean spot margin or advanced lending), prefer the module matching the broader conversation context, or ask the user to clarify.
-- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA → trading-bot, AI推荐/一键创建/策略推荐/Aurora → aurora, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 授权/登录/连接Bybit/OAuth → oauth
+- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐 → trading-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 授权/登录/连接Bybit/OAuth → oauth
 
 ### Loading Rules
 
@@ -364,7 +363,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `X-BAPI-SIGN-TYPE` | `2` for RSA-SHA256; omit or set `1` for HMAC-SHA256 |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.5.3` |
+| `User-Agent` | `bybit-skill/1.5.4` |
 | `X-Referer` | `bybit-skill` |
 
 ### Signing Algorithm
@@ -422,7 +421,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.5.3" \
+  -H "User-Agent: bybit-skill/1.5.4" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -444,7 +443,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.5.3" \
+  -H "User-Agent: bybit-skill/1.5.4" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
