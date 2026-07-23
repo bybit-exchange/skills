@@ -4,14 +4,15 @@
 
 ## Table of Contents
 
-1. [Earn Products](#scenario-earn-products) — FlexibleSaving & OnChain
-2. [Fixed Term](#scenario-fixed-term) — FixedTermSaving / FundPool / FundPoolPremium
-3. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin / Discount Buy
-4. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
-5. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
-6. [RWA Earn](#scenario-rwa-earn) — Tokenized real-world asset stake/redeem (BlackRock IGBF etc.)
-7. [Hold-to-Earn](#scenario-hold-to-earn) — Airdrop yield by holding coins
-8. [PWM (Private Wealth Management)](#scenario-pwm) — Institutional fund management & user investment plans
+1. [All Positions Overview](#scenario-all-positions-overview) — Complete earn position snapshot
+2. [Earn Products](#scenario-earn-products) — FlexibleSaving & OnChain
+3. [Fixed Term](#scenario-fixed-term) — FixedTermSaving / FundPool / FundPoolPremium
+4. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin / Discount Buy
+5. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
+6. [BYUSDT Token](#scenario-byusdt-token) — Mint / Redeem earn token
+7. [RWA Earn](#scenario-rwa-earn) — Tokenized real-world asset stake/redeem (BlackRock IGBF etc.)
+8. [Hold-to-Earn](#scenario-hold-to-earn) — Airdrop yield by holding coins
+9. [PWM (Private Wealth Management)](#scenario-pwm) — Institutional fund management & user investment plans
 
 ---
 
@@ -35,6 +36,31 @@
 | DualAssets / SmartLeverage / DoubleWin / DiscountBuy | `FUND`, `UNIFIED` |
 | Liquidity Mining | `FUND` (via `quoteAccountType`/`baseAccountType`) |
 | BYUSDT Mint → `FlexibleSaving` | Redeem → `UNIFIED` |
+
+---
+
+## Scenario: All Positions Overview
+
+User might say: "check all my earn positions", "show all earn", "earn overview", "what earn do I have", "查看所有理财持仓"
+
+> **Query ALL of the following endpoints in parallel** — never skip any. This is the canonical checklist for a complete earn position snapshot.
+
+| Category | Endpoint | Method | Key fields |
+|----------|----------|--------|------------|
+| FlexibleSaving | `/v5/earn/position?category=FlexibleSaving` | GET | amount, totalPnl, claimableYield, yesterdayYield |
+| OnChain | `/v5/earn/position?category=OnChain` | GET | amount, status, estimateStakeTime |
+| FixedTerm | `/v5/earn/fixed-term/position` | GET | amount, status, settlementTime, autoReinvest |
+| DualAssets | `/v5/earn/advance/position?category=DualAssets` | GET | amount, apyE8, direction, targetPrice, expectReturnAmount |
+| SmartLeverage | `/v5/earn/advance/position?category=SmartLeverage` | GET | amount, leverage, direction |
+| DoubleWin | `/v5/earn/advance/position?category=DoubleWin` | GET | amount, leverage, lowerPrice, upperPrice, redeemable |
+| DiscountBuy | `/v5/earn/advance/position?category=DiscountBuy` | GET | amount, purchasePrice, knockoutPrice, settlementTime |
+| LiquidityMining | `/v5/earn/liquidity-mining/position` | GET | quoteAmount, baseAmount, claimableYield, leverage |
+| BYUSDT | `/v5/earn/token/position?coin=BYUSDT` | GET | totalAmount, totalYield, aprE8 |
+| RWA | `/v5/earn/rwa/position` | GET | effectiveShare, holdAmount, nav |
+| Hold-to-Earn | `/v5/earn/hold-to-earn/product` | GET | status (`Online` only earns yield) |
+| PWM | `/v5/earn/pwm/investment-plan/all` | GET | planId, planName, status, currentAssetUsd, accumulateYieldUsd |
+
+> **Display rules**: Skip categories that return empty lists. For OnChain `Processing` entries on testnet, note they are demo data. Convert all `E8` fields before displaying. Group results by category with a summary header per section.
 
 ---
 

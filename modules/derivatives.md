@@ -174,7 +174,7 @@ POST /v5/position/trading-stop
 * **triggerBy**: `LastPrice` | `IndexPrice` | `MarkPrice`
 * **tpslMode**: `Full` | `Partial`
 * **stopOrderType**: `TakeProfit` | `StopLoss` | `TrailingStop` | `Stop` | `PartialTakeProfit` | `PartialStopLoss` | `tpslOrder` | `OcoOrder`
-* **execType**: `Trade` | `AdlTrade` | `Funding` | `BustTrade` | `Delivery` | `Settle` | `BlockTrade` | `MovePosition`
+* **execType**: `Trade` | `AdlTrade` | `Funding` | `BustTrade` | `Delivery` | `Settle` | `BlockTrade` | `MovePosition` | `SessionSettlePnL` | `CoinSwap` | `CorporateAction`
 * **setMarginMode**: `ISOLATED_MARGIN` | `REGULAR_MARGIN` | `PORTFOLIO_MARGIN`
 * **autoAddMargin**: `0` (off) | `1` (on)
 

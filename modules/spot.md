@@ -72,6 +72,7 @@ POST /v5/order/cancel
 | Auto Repay Mode | `/v5/spot-margin-trade/get-auto-repay-mode` | GET | — | — | spot |
 | Set Auto Repay | `/v5/spot-margin-trade/set-auto-repay-mode` | POST | — | — | spot |
 | Max Borrowable | `/v5/spot-margin-trade/max-borrowable` | GET | — | coin | spot |
+| Flexible Available Inventory | `/v5/spot-margin-trade/flexible-available-inventory` | GET | currency | — | spot |
 | Position Tiers | `/v5/spot-margin-trade/position-tiers` | GET | — | — | spot |
 | Repayable Amount | `/v5/spot-margin-trade/repayment-available-amount` | GET | — | — | spot |
 
