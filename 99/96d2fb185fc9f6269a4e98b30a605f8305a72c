@@ -1,0 +1,31 @@
+modules/account.md
+  f5d5b6bc01a64815 205,309-313
+SKILL.md
+  f5d5b6bc01a64815 5,7,30,40,274,278,298,366,424,446
+.claude-plugin/plugin.json
+  f5d5b6bc01a64815 5
+README.md
+  f5d5b6bc01a64815 5
+VERSION
+  f5d5b6bc01a64815 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.10+672fbf0",
+  "base_commit_sha": "9996d2fb185fc9f6269a4e98b30a605f8305a72c",
+  "prompts": {
+    "f5d5b6bc01a64815": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "1fd3a691-c6c0-4b51-a679-452379519c91",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "paul.yang",
+      "messages": [],
+      "total_additions": 20,
+      "total_deletions": 13,
+      "accepted_lines": 20,
+      "overriden_lines": 0
+    }
+  }
+}
