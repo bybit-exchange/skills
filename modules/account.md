@@ -202,6 +202,7 @@ Guide the user to enable the corresponding permission in App settings.
 | Create Demo Account | `/v5/user/create-demo-member` | POST | — | — | — |
 | Affiliate User List | `/v5/affiliate/aff-user-list` | GET | — | size, cursor, need365, need30, needDeposit, startDate, endDate | — |
 | Referral List | `/v5/user/invitation/referrals` | GET | — | limit, cursor | — |
+| Query Referral Code | `/v5/user/invitation/code` | GET | — | — | — |
 | Sign Agreement | `/v5/user/agreement` | POST | agree, category | — | — |
 
 ## Endpoint Notes
@@ -304,6 +305,12 @@ Guide the user to enable the corresponding permission in App settings.
 ### Affiliate Sub List (`/v5/affiliate/affiliate-sub-list`)
 - Query sub-affiliates with optional commission date range (`startDate`/`endDate` in YYYY-MM-DD format).
 - `size`: 0-100 (0 = all, up to 100). Rate limit: 10 req/s. Requires Master UID with affiliate permission.
+
+### Query Referral Code (`/v5/user/invitation/code`)
+- No request parameters — the user identity is taken from the API Key. Sub-accounts automatically return the parent account's referral codes.
+- Only active referral codes are returned (`started_at` < now < `expired_at`).
+- Response `referralCodes[]` items: `referralCode`, `referralLink` (built as `https://{domain}/{lang}/invite/?ref={referralCode}`, varying by site and language), and `scene` (`1` Affiliate, `2` Friend).
+- Rate limit: 10 req / 5s. Results are cached ~600s server-side. Error `10005` Permission denied; `141002` server error.
 
 ### Set Margin Mode (`/v5/account/set-margin-mode`)
 - Error code `3200425`: Cannot switch to Portfolio Margin (PM) mode while holding an Event Futures position. Close the position before switching.
