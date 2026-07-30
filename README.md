@@ -2,7 +2,7 @@
 
 Trade on Bybit using natural language. Tell any AI assistant one sentence, and it can execute trades, check markets, manage positions, and more — zero installation required.
 
-**Version:** 1.5.6 | **License:** MIT
+**Version:** 1.5.7 | **License:** MIT
 
 ## How It Works
 

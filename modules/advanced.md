@@ -113,7 +113,7 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Repay | `/v5/ins-loan/repay-loan` | POST | token, quantity | — |
 
 > **Association UID `operate`**: `0` = bind UID, `1` = unbind UID. Rate limit: 1 req/s.
-> **Coin Delta Amount**: Returns per-coin delta hedging limits (`coinDeltaSize`, `coinDeltaAvailableAmount`) and aggregate `riskUnitDeltaAmount`.
+> **Coin Delta Amount**: Returns per-coin delta hedging limits (`coinDeltaSize`, `coinDeltaAvailableAmount`), aggregate `riskUnitDeltaAmount` / `riskUnitDeltaAvailableAmount`, and `riskUnitDelta` (risk unit delta value).
 > **Product Info `productType`**: `0` = Default, `1` = CTA, `2` = Hedge.
 
 ---
