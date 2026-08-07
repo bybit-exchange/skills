@@ -216,6 +216,7 @@ Guide the user to enable the corresponding permission in App settings.
 
 ### Trading Behavior Config (`/v5/account/user-setting-config`)
 - Response now includes additional fields: `lpaSpot` (spot LPA switch), `lpaPerp` (perpetual LPA switch), `smsef` (spot MNT fee deduction switch), `fmsef` (futures/contract MNT fee deduction switch), `deltaEnable` (delta account mode status).
+- `smpType` (SMP / Self-Match Prevention type): `0` unspecified — no SMP (default) | `1` cancel taker (maker stays) | `2` cancel maker (taker stays) | `3` cancel both. Note: `smpGroup` is deprecated and always returns `0`.
 
 ### Option Asset Info (`/v5/account/option-asset-info`)
 - No parameters required. Returns option asset PNL information grouped by coin, including `totalDelta`, `totalRPL`, `totalUPL`, `assetIM`, `assetMM` per coin.

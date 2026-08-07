@@ -397,6 +397,12 @@ async function manualCodeMode(args) {
 
   const outputFile = initData.output_file || args.output;
   fs.mkdirSync(path.dirname(outputFile), { recursive: true, mode: 0o700 });
+
+  if (fs.existsSync(outputFile)) {
+    process.stdout.write(JSON.stringify({ success: true, already_handled: true, message: "Callback already received by local server" }) + "\n");
+    process.exit(0);
+  }
+
   fs.writeFileSync(outputFile, JSON.stringify(result), { mode: 0o600 });
 
   process.stdout.write(JSON.stringify({ success: true, step: "code_saved", output_file: outputFile }) + "\n");
@@ -405,20 +411,31 @@ async function manualCodeMode(args) {
 
 async function main(args) {
   if (!args) args = parseArgs();
-  const port = await findAvailablePort(args.port, args.port + 10);
 
   const codeVerifier = generateCodeVerifier();
   const codeChallenge = generateCodeChallenge(codeVerifier);
   const state = crypto.randomBytes(8).toString("hex");
-
   const host = HOSTS[args.env];
+
+  let port = args.port;
+  let serverStarted = false;
+
+  try {
+    port = await findAvailablePort(args.port, args.port + 10);
+    serverStarted = true;
+  } catch (e) {
+    process.stderr.write(`Port bind failed (${args.port}-${args.port + 10}): ${e.message}\n`);
+  }
+
+  const redirectUri = `http://127.0.0.1:${port}/callback`;
+
   const authorizeUrl =
     `${host.authorize}` +
     `?client_id=${CLIENT_ID}` +
     `&response_type=code` +
     `&scope=ai-account` +
     `&state=${state}` +
-    `&redirect_uri=http://127.0.0.1:${port}/callback` +
+    `&redirect_uri=${encodeURIComponent(redirectUri)}` +
     `&code_challenge=${codeChallenge}` +
     `&code_challenge_method=S256`;
 
@@ -427,17 +444,22 @@ async function main(args) {
     code_verifier: codeVerifier,
     state: state,
     port: port,
+    server_started: serverStarted,
     output_file: args.output,
     credential_path: getCredentialPath(),
   };
-  const initJson = JSON.stringify(initData);
 
   const initFile = getInitFilePath(args.output);
   fs.mkdirSync(path.dirname(initFile), { recursive: true, mode: 0o700 });
-  fs.writeFileSync(initFile, initJson, { mode: 0o600 });
+  fs.writeFileSync(initFile, JSON.stringify(initData), { mode: 0o600 });
 
   const { code_verifier: _cv, ...publicInitData } = initData;
+  publicInitData.init_file = initFile;
   process.stdout.write(JSON.stringify(publicInitData) + "\n");
+
+  if (!serverStarted) {
+    process.exit(0);
+  }
 
   const server = http.createServer((req, res) => {
     const parsed = new URL(req.url, "http://127.0.0.1");
@@ -458,18 +480,23 @@ async function main(args) {
       res.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
       res.end("Authorization failed: state mismatch.");
     } else if (code) {
-      const redirectUri = `http://127.0.0.1:${port}/callback`;
-      const result = {
-        code: code,
-        client_id: CLIENT_ID,
-        code_verifier: codeVerifier,
-        redirect_uri: redirectUri,
-        state: state,
-      };
-      fs.writeFileSync(args.output, JSON.stringify(result), { mode: 0o600 });
-      process.stdout.write(JSON.stringify({ status: "ok", output_file: args.output }) + "\n");
-      res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-      res.end("Authorization successful! You can close this page.");
+      if (fs.existsSync(args.output)) {
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end("Authorization already processed. You can close this page.");
+        setTimeout(() => { server.close(); process.exit(0); }, 500);
+      } else {
+        const result = {
+          code: code,
+          client_id: CLIENT_ID,
+          code_verifier: codeVerifier,
+          redirect_uri: redirectUri,
+          state: state,
+        };
+        fs.writeFileSync(args.output, JSON.stringify(result), { mode: 0o600 });
+        process.stdout.write(JSON.stringify({ status: "ok", output_file: args.output }) + "\n");
+        res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+        res.end("Authorization successful! You can close this page.");
+      }
     } else {
       const errResult = { error: parsed.searchParams.get("error") || "authorization_failed" };
       fs.writeFileSync(args.output, JSON.stringify(errResult), { mode: 0o600 });
@@ -488,6 +515,10 @@ async function main(args) {
 
   const TIMEOUT_MS = 300000;
   setTimeout(() => {
+    if (fs.existsSync(args.output)) {
+      server.close();
+      process.exit(0);
+    }
     const errResult = { error: "timeout" };
     fs.writeFileSync(args.output, JSON.stringify(errResult), { mode: 0o600 });
     process.stdout.write(JSON.stringify(errResult) + "\n");
