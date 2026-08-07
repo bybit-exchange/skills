@@ -69,6 +69,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 |----------|------|--------|----------------|-----------------|
 | Borrow Contract Info | `/v5/crypto-loan-fixed/borrow-contract-info` | GET | orderCurrency | — |
 | Borrow Order Quote | `/v5/crypto-loan-fixed/borrow-order-quote` | GET | orderCurrency | orderBy |
+| Available Inventory | `/v5/crypto-loan-fixed/available-inventory` | GET | currency, term, annualRate | — |
+| Place Borrow | `/v5/crypto-loan-fixed/borrow` | POST | orderCurrency, orderAmount, annualRate, term, collateralList | autoRepay, repayType, strategyType |
 | Borrow Order Info | `/v5/crypto-loan-fixed/borrow-order-info` | GET | — | orderId |
 | Cancel Borrow | `/v5/crypto-loan-fixed/borrow-order-cancel` | POST | orderId | — |
 | Full Repay | `/v5/crypto-loan-fixed/fully-repay` | POST | orderId | — |
@@ -84,6 +86,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 > **Place Supply `availableSource`**: `0` funding account (default), `1` flexible savings, `2` mixed (funding + flexible savings).
 > **Cancel Supply `refundedAccount`** (only effective when order was placed from flexible savings): `0` redeem to funding account (default), `1` keep in flexible savings (unfreeze).
+> **Place Borrow `term`**: `7|14|30|60|90|180` (days). `autoRepay`: `0` manual, `1` auto-repay. `repayType`: `1` normal repay. `strategyType`: `PARTIAL` allow partial fill (default) | `FULL` full fill only. `collateralList` is a non-empty array of `{currency, amount}`. Check Borrow Order Quote for available rates first.
+> **Available Inventory `term`**: `7|14|30|90|180` (days); `annualRate` decimal (e.g. `0.02` = 2%). Returns lending-pool `availableInventory` = min(market available + financial trial, user remaining borrow limit).
 > **Error `148048`**: "The collateral amount has exceeded the platform limit" — applies to borrow, renew, and adjust-LTV operations.
 
 ### Crypto Loan — Flexible (authentication required)
@@ -92,6 +96,7 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 |----------|------|--------|----------------|-----------------|
 | Repay | `/v5/crypto-loan-flexible/repay` | POST | loanCoin, repayAmount | — |
 | Repay Collateral | `/v5/crypto-loan-flexible/repay-collateral` | POST | orderId | — |
+| Available Inventory | `/v5/crypto-loan-flexible/available-inventory` | GET | currency | — |
 | Ongoing Coins | `/v5/crypto-loan-flexible/ongoing-coin` | GET | — | loanCurrency |
 | Borrow History | `/v5/crypto-loan-flexible/borrow-history` | GET | — | orderId, loanCurrency, limit, cursor |
 | Repayment History | `/v5/crypto-loan-flexible/repayment-history` | GET | — | repayId, loanCurrency, limit, cursor |
