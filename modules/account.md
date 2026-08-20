@@ -209,10 +209,36 @@ Guide the user to enable the corresponding permission in App settings.
 
 ### Asset Overview (`/v5/asset/asset-overview`)
 - Parameters updated: `category` and `coin` replaced by `accountType`, `memberId`, and `valuationCurrency`.
-- `accountType` accepts comma-separated values: `SPOT`, `UNIFIED`, `FUND`, `CONTRACT`, `INVESTMENT`, `OPTION`. If omitted, returns all account types.
-- `memberId` specifies a sub-account to query. If API key belongs to a sub-account, must match own UID or be omitted.
-- `valuationCurrency` defaults to `USD` if not provided.
-- Accounts with zero balance are filtered out, except for `UNIFIED` and `FUND` account types.
+- **⚠️ `accountType` values are NOT the wallet-balance account types.** This endpoint uses its own naming — do NOT pass `UNIFIED` / `FUND` / `SPOT` / `CONTRACT` here (returns `3401405`). Comma-separated; if omitted, returns all account types.
+
+  | Value | Meaning |
+  |-------|---------|
+  | `UnifiedTradingAccount` | Unified trading account. Always returned even at zero balance. Contains `CRYPTO` + optionally `STOCKS` categories |
+  | `FundingAccount` | Funding account. Always returned even at zero balance |
+  | `Earn` | Earn / financial products — has `categories` by product type |
+  | `TradingBot` | Trading bot account — has `categories` by product type |
+  | `CopyTrading` | Copy trading — has `categories` by product type |
+  | `Alpha` | Alpha / Spot on-chain — has `categories` by product type |
+  | `Launchpool` | Launchpool |
+  | `CryptoLoans` | Fixed-rate crypto loans |
+  | `CryptoLoans_legacy` | Legacy crypto loans |
+  | `MarginStakedSOL` | Margin staked SOL |
+  | `PayLater` | Pay later |
+  | `TradFi` | TradFi / MT5 account |
+  | `TRY_Savings` | TRY savings |
+
+- `memberId` specifies a sub-account to query. If API key belongs to a sub-account, must match own UID or be omitted (otherwise `3401406`). Parent-account keys may specify any legal sub-account UID.
+- `valuationCurrency` defaults to `USD` if not provided. If no market price exists for the requested currency → `3401408`.
+- **Which accounts appear in `list[]`**: zero-balance accounts are filtered out, EXCEPT `UnifiedTradingAccount` and `FundingAccount` (always returned) or any account explicitly named in the `accountType` request param. Account types not enabled for the current site are excluded entirely.
+- **`categories` vs top-level `coinDetail`** — they are mutually exclusive per account:
+  - `UnifiedTradingAccount` → returns `categories` (`CRYPTO`, and `STOCKS` if the user holds DirectStocks; DirectStocks is merged into UTA, **not** returned as its own account type). Coin details live inside each category. **No top-level `coinDetail`.** `extMap` is stripped for UTA.
+  - `Earn` / `TradingBot` / `CopyTrading` / `Alpha` → return `categories` where each category is a product-type name.
+  - All other account types (`FundingAccount`, `Launchpool`, `CryptoLoans`, …) → return top-level `coinDetail`, no `categories`. `extMap` is included when non-empty.
+- In the `STOCKS` category, `coinDetail[].coin` is the **stock symbol** (e.g. `AAPL`, `TSLA`), not a coin ticker.
+- Zero-equity categories and zero-equity coins are filtered from the response.
+- **`totalEquity` aggregation**: for `CopyTrading` and `TradFi`, negative equity is treated as `0` (it does not reduce the total).
+- **Never branch on `retMsg`** — check `retCode == 0`. The spec example shows `retMsg: ""` but the live API returns `"Success"`; the value is not contractual.
+- Error codes: `3401405` `accountType` illegal · `3401406` `memberId` not available · `3401407` account status abnormal / asset query failed · `3401408` valuation currency unavailable · `131001` internal invoke error (asset-argus) · `170130` invalid parameter data.
 
 ### Trading Behavior Config (`/v5/account/user-setting-config`)
 - Response now includes additional fields: `lpaSpot` (spot LPA switch), `lpaPerp` (perpetual LPA switch), `smsef` (spot MNT fee deduction switch), `fmsef` (futures/contract MNT fee deduction switch), `deltaEnable` (delta account mode status).

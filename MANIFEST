@@ -12,5 +12,6 @@ modules/market.md
 modules/oauth.md
 modules/spot.md
 modules/strategy.md
+modules/tradfi-bot.md
 modules/tradfi.md
 modules/trading-bot.md

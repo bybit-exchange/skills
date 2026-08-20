@@ -339,8 +339,9 @@ POST /v5/earn/liquidity-mining/remove-liquidity
 
 ```
 POST /v5/earn/liquidity-mining/reinvest
-{"productId":"1001","orderLinkId":"lm-reinvest-001","positionId":"5001"}
+{"productId":"1001","orderLinkId":"lm-reinvest-001","positionId":"5001","leverage":"1"}
 ```
+> Required: `productId`, `orderLinkId`, `positionId`. Optional: `leverage` (integer-only string, e.g. `"1"`/`"3"`; defaults to `"1"` = no leverage). Cap is the product's `maxLeverage` from `.../product`.
 
 ```
 POST /v5/earn/liquidity-mining/add-margin
@@ -368,7 +369,7 @@ GET /v5/earn/liquidity-mining/liquidation-records
 | Product | `.../product` | GET | — | baseCoin, quoteCoin |
 | Add Liquidity | `.../add-liquidity` | POST | productId, orderLinkId, (quoteAmount or baseAmount) | quoteAccountType, baseAccountType, leverage |
 | Remove Liquidity | `.../remove-liquidity` | POST | productId, orderLinkId, positionId | removeRate, removeType |
-| Reinvest | `.../reinvest` | POST | productId, orderLinkId, positionId | — |
+| Reinvest | `.../reinvest` | POST | productId, orderLinkId, positionId | leverage |
 | Add Margin | `.../add-margin` | POST | productId, orderLinkId, positionId, amount, quoteAccountType | — |
 | Claim Interest | `.../claim-interest` | POST | productId | — |
 | Position | `.../position` | GET | — | productId, baseCoin |
@@ -484,6 +485,11 @@ User might say: "hold to earn", "airdrop yield", "holding rewards", "USDE yield"
 > - Product status: `NotStarted`, `Online`, `Ended`. Only `Online` products distribute yield.
 > - `timeStart`/`timeEnd` are Unix seconds, cannot query >3 months ago.
 > - Response: `effectiveAmount` (principal), `pnl` (yield distributed), `apy` (annualized rate).
+> - **APR fields are pre-formatted strings including the `%` suffix** (e.g. `"5.285982%"`) — display directly, do not multiply by 100. `"0%"` means no yield was distributed yesterday.
+> - Product List returns the array under **`result.products`** (not `result.list`). Each product has a `yields[]` array (yield coin may differ from the held coin — cross-coin airdrops, e.g. holding `RLUSD` yields `XRP`). Each `yields[]` entry has `coinName`, `apy`, `personalApy`, `multiplier`.
+> - **`personalApy`** (present at both product level and per `yields[]` entry): the user's individual APR after applying their personal coefficient. Product-level `personalApy` is the sum across all yield coins.
+> - **`multiplier`**: personal coefficient applied to the base `apy`. Returns `"1"` when the user has no position in the product. Example: base `apy` `"0.619304%"` × `multiplier` `"2"` → `personalApy` `"1.238608%"`.
+> - When showing a product to a logged-in user, prefer `personalApy` over `apy`; `apy` is the generic/base rate.
 
 ---
 
