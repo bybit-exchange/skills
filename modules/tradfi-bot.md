@@ -7,7 +7,6 @@
 > - Identity & Principles, including **Fill-in principle / `round_up_nice()` rounding**, "No internal process exposure", and "Never silently change user-selected or Aurora-recommended params"
 > - Safety Rules (confirmation-before-write, large-amount second confirmation, anti-gambling) — **non-bypassable, evaluated first**
 > - User Type Detection (Beginner vs Advanced flow shape)
-> - Backtest common params, `_e4` response decoding, and shared error handling
 >
 > Do NOT re-derive any of the above from this file.
 
@@ -91,10 +90,10 @@ Trailing Stop: disabled
 
 Risk disclosure: TradFi assets have limited trading hours. Bot will only open/close positions when markets are open.
 
-Reply "confirm" to launch, "backtest" to check historical performance, or tell me what to adjust.
+Reply "confirm" to launch, or tell me what to adjust.
 ```
 
-> **Localization:** adapt to the user's language; keep `confirm` as-is (system keyword), localize "backtest" → 「回测」.
+> **Localization:** adapt to the user's language; keep `confirm` as-is, it is a system keyword.
 
 ### Step 4 — Validate (after user confirms, before creating)
 
@@ -129,21 +128,6 @@ Quote token is **always USDT** for TradFi Combo. Otherwise follow `trading-bot.m
 | `BOT_DISPLAY_STATUS_COMPLETED` + `close_code` set | ❌ Initialization failed | Report failure + reason |
 
 ⚠️ `close_code = MT5_COMBO_BOT_CLOSE_CODE_FAILED_INITIATION` is the **default/unset value** — not an error. **Judge bot state by `bot_display_status`, never by `close_code`.**
-
----
-
-## Backtest
-
-Triggered by the user saying "backtest" / 「回测」. Common params, `_e4` decoding, cooldown, and shared error codes are in `trading-bot.md` — only the TradFi-specific bits are here.
-
-| Endpoint | Key params |
-|----------|-----------|
-| `POST /v5/backtest/tradfi-combo` | `contracts[]`, `leverage`, `rebalance_threshold`, `rebalance_interval` |
-
-- **Fallback defaults** (Aurora unavailable / user gave only assets): `leverage = 5`, `rebalance_threshold = "5"`, `rebalance_interval = "7d"`, weights = equal split
-- **Param mapping** from Aurora / create params: same as Futures Combo — `contracts[].symbol`, `contracts[].direction` (`GRID_MODE_LONG`→`LONG`), `contracts[].weight` = `ratio_e2` (already an integer %), `leverage`, `rebalance_threshold` = `resize_ratio_e2` as string, `rebalance_interval` = seconds → duration string
-- **`rebalance_interval` format:** `<number>[m|h|d]` — from seconds: 1800→`"30m"`, 3600→`"1h"`, 14400→`"4h"`, 28800→`"8h"`, 43200→`"12h"`, 86400→`"1d"`, 259200→`"3d"`, 604800→`"7d"`, 1209600→`"14d"`, 2419200→`"28d"`
-- `return_volatility_e4` is the volatility field for combo/tradfi (grid/martingale use `atr_e4` instead)
 
 ---
 
