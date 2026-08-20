@@ -175,13 +175,23 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 | Endpoint | Path | Method | Required Params | Optional Params |
 |----------|------|--------|----------------|-----------------|
-| Earnings Info | `/v5/broker/earnings-info` | GET | — | bizType, startTime, endTime, limit, cursor |
+| Earnings Info | `/v5/broker/earnings-info` | GET | — | bizType, begin, end, uid, limit, cursor |
 | Account Info | `/v5/broker/account-info` | GET | — | — |
 | Voucher Info | `/v5/broker/award/info` | GET | awardId | — |
 | Distribution Record | `/v5/broker/award/distribution-record` | GET | — | awardId, startTime, endTime, limit, cursor |
 | All Rate Limits | `/v5/broker/apilimit/query-all` | GET | — | limit, cursor, uids |
 | Rate Limit Cap | `/v5/broker/apilimit/query-cap` | GET | — | — |
 | Set Rate Limit | `/v5/broker/apilimit/set` | POST | list | — |
+
+### Earnings Info (`/v5/broker/earnings-info`)
+- **Date params are `begin` / `end`, NOT `startTime` / `endTime`**, and the format is `YYYYMMDD` (e.g. `"20240131"`), not milliseconds. They must be supplied **together or not at all** (`3500407` otherwise); omitting both returns the latest 7 days.
+- `bizType`: `SPOT` | `DERIVATIVES` | `OPTIONS` | `CONVERT`. If not provided, all types are returned.
+- `uid`: broker subaccount UID. If not provided, returns data for all subaccounts.
+- `limit`: `1`–`1000` (out of range → `3500402`). `cursor`: use `nextPageCursor` from the previous response, **URL-encoded**. An empty `nextPageCursor` means last page.
+- Requires an **exchange broker master account** (`3500403` otherwise). Data covers up to the past 1 month until T-1 (`3500406` if the range exceeds it); older data requires contacting your Relationship Manager.
+- `details[].earning` is the **total** commission and equals `baseFeeEarning + markupEarning`. Rebate amounts have trailing zeros stripped.
+- `totalEarningCat` groups totals by business type (`spot`, `derivatives`, `options`, `convert`, `total`) within the queried range; `total` is aggregated by coin across all types.
+- Error codes: `3500402` invalid `limit` · `3500403` not an exchange broker master account · `3500404` invalid cursor · `3500406` out of query time range · `3500407` `begin`/`end` not supplied as a pair.
 
 ---
 
