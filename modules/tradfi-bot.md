@@ -123,9 +123,9 @@ Reply "confirm" to launch, or tell me what to adjust.
 | check_code | Action |
 |-----------|--------|
 | `LIMIT_CHECK_CODE_SUCCESS_UNSPECIFIED` | Validation passed |
-| `LIMIT_CHECK_CODE_INIT_MARGIN_TOO_LOW` | Re-read `init_margin.min` and use `min × 1.02` (price moved since Step 2) |
+| `LIMIT_CHECK_CODE_INIT_MARGIN_TOO_LOW` | The confirmed amount no longer clears the minimum (price moved since Step 2). Re-read `init_margin.min`. **If the user chose the amount explicitly, do NOT raise it silently** — show a delta card proposing `round_up_nice(min)` and wait for a fresh `confirm` (see **RE-CONFIRM RULE** in `trading-bot.md`). Only when the amount came from our own minimum-fallback may you use `min × 1.02` directly. |
 | `LIMIT_CHECK_CODE_INIT_MARGIN_TOO_HIGH` | Reduce investment to at most `init_margin.max` |
-| `LIMIT_CHECK_CODE_LEVERAGE_TOO_HIGH` | Reduce leverage to at most `leverage.max` |
+| `LIMIT_CHECK_CODE_LEVERAGE_TOO_HIGH` | The confirmed leverage exceeds `leverage.max` (usually because the weakest selected asset caps it). **Tell the user and re-confirm** — lowering leverage does not overspend, but it changes the risk/return profile they evaluated, so it is still a param they chose. Delta card: `Leverage: 50x → 20x · reason: XAGUSD caps at 20x`. |
 | `retCode=10001` | Params error — most often `target_position_percent` not summing to `"1.0"` |
 
 ### Step 5 — Balance check & transfer
