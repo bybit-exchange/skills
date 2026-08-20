@@ -43,14 +43,16 @@ Body: { "long_block_id": "<category>", "short_block_id": "<category>" }
 ```
 Returns up to 6 portfolio strategies across TradFi assets.
 
-Categories: `Stocks` · `Commodities` · `Forex` · `Indices` · `Metals` · `recommend` (AI-picked, usable in either slot)
+Categories (these are **Aurora filter values**, not the same list as `get-symbol-list`'s groups): `Stocks` · `Commodities` · `Forex` · `Indices` · `Metals` · `recommend` (AI-picked, usable in either slot). `recommend` is accepted by Aurora but is **not** a `symbol_group` in `get-symbol-list`.
 
 Strategy modes:
 - **Long only:** `{"long_block_id": "Stocks", "short_block_id": ""}` — all assets go long
 - **Short only:** `{"long_block_id": "", "short_block_id": "Commodities"}` — all assets go short
 - **Mixed (long + short):** `{"long_block_id": "Stocks", "short_block_id": "Metals"}` — some long, some short
 
-⚠️ Mixed mode: `long_block_id` and `short_block_id` must be **different** categories.
+⚠️ Mixed mode: `long_block_id` and `short_block_id` must be **different** categories. Passing the same value in both slots does not error — it returns `result.status_code=40010` with `debug_msg="aurora creation empty"` and an empty `data[]`. Leaving **both** slots empty returns `status_code=10001 invalid request params`.
+
+> Note: `retCode` stays `0` in both cases — the failure is reported in `result.status_code`, per the Bot API's `status_code`/`debug_msg` convention. Do not treat `retCode=0` alone as success here.
 
 **When Aurora returns empty:**
 1. Try a different category (6 available: Stocks / Commodities / Forex / Indices / Metals / recommend)
@@ -64,14 +66,29 @@ Strategy modes:
 
 Both calls are **mandatory before showing the confirmation card**.
 
-1. `POST /v5/mt5combobot/get-symbol-list` → per-symbol `enable_trading` (`true` = market open, `false` = closed) and per-symbol max leverage
+1. `POST /v5/mt5combobot/get-symbol-list` → per-symbol `enable_trading`, `leverage`, and `market_open_time_e3`
 2. `POST /v5/mt5combobot/get-limit` → `init_margin.min`/`max`, `leverage.min`/`max`, `check_code`
+
+**⚠️ `get-symbol-list` response shape — `result.list` is a MAP, not an array.** It is keyed by `symbol_group`, and each value wraps the symbols in a `value` array:
+
+```
+result.list = {
+  "":            { "value": [ {"symbol": "USDUSD+", ...} ] },   // stablecoin leg for Grid-Like mode
+  "Stocks":      { "value": [ ... ] },   // ~414 symbols
+  "Forex":       { "value": [ ... ] },   // ~62
+  "Indices":     { "value": [ ... ] },   // ~21
+  "Commodities": { "value": [ ... ] },   // ~13
+  "Metals":      { "value": [ ... ] }    // ~8
+}
+```
+Flatten across groups before searching for a symbol. Per-symbol fields you need: `symbol`, `enable_trading` (bool), `leverage` (string, this symbol's max — observed range `"2"`–`"200"`), `market_open_time_e3`, `symbol_desc`, plus `min_lots`/`max_lots`/`step_lots`/`contract_size`/`tick_size`/`digits` and live `ask`/`bid`. `is_recommend`/`recommend_score` mark AI-favoured symbols.
 
 Then:
 - **Investment:** display `round_up_nice(init_margin.min)` (Fill-in rounding rules in `trading-bot.md`), showing the real minimum alongside. **Ignore Aurora `min_investment`.**
 - **Leverage:** recommended = `min(all selected assets' max leverage, 50)`; displayed actual max = `min(all selected assets' max leverage, 100)`. Use Aurora's value if ≤ 50, otherwise cap at 50.
   Example: assets support [50x, 80x, 100x] → max 50x, recommended 50x. Assets support [200x, 150x] → max 100x, recommended 50x.
-- **Market status:** show ✓ Open / Closed per asset. If ANY market is closed, add: "Bot will enter AWAIT_ACTIVATION and auto-start when all markets open".
+  ⚠️ Per-symbol `leverage` varies a lot (many stocks are `"2"`–`"4"`), so the portfolio cap is usually set by the *weakest* asset, not by 50/100.
+- **Market status:** show ✓ Open / Closed per asset. If ANY market is closed, add: "Bot will enter AWAIT_ACTIVATION and auto-start when all markets open". When `enable_trading=false`, **`market_open_time_e3` is the next open time in ms** — use it to tell the user *when* (e.g. "opens 21:30 today") instead of a vague "when the market opens". `"0"` means no scheduled time available.
 
 ### Step 3 — Confirmation card, wait for confirm
 
@@ -81,7 +98,7 @@ TradFi Combo (Aurora AI · Long)
 Assets:
   XAUUSD+  Long 34%  [Market Open ✓]
   XAGUSD   Long 33%  [Market Open ✓]
-  USOUSD   Long 33%  [Market Closed – will activate when market opens]
+  USOUSD   Long 33%  [Market Closed – opens 21:30, bot activates then]
 
 Leverage: 20x (recommended, max 50x)
 Rebalance: By threshold 3%
@@ -217,7 +234,20 @@ For modify settings / adjust position / transfer funds in-out, direct the user t
 - Range 5%–99% (`"0.05"`–`"0.99"`); `"0"` = disabled
 - Value is the drawdown threshold from peak equity — `"0.10"` triggers when equity drops 10% from peak
 
-**TP / SL:** **not supported.** Do not include `sl_percent` / `tp_percent` in create params.
+**TP / SL:** **do not pass by default.** Status is genuinely ambiguous: `get-limit` returns ranges for both (`sl_percent` `0.01`–`0.99`, `tp_percent` `0.01`–`100`), which suggests they are accepted, but whether `create` honours them is **unverified** (verifying requires an actual bot creation). Omit `sl_percent` / `tp_percent` unless the user explicitly asks for TP/SL; if they do, tell them it is unconfirmed for this bot type and that Trailing Stop is the supported protection mechanism here.
+
+**Verified `get-limit` ranges** (mainnet, XAUUSD+ / XAGUSD 50-50 @ 20x):
+
+| Field | min | max |
+|-------|-----|-----|
+| `init_margin` | `"786"` | `"791914.6"` (varies with assets/leverage — always read it, never hardcode) |
+| `leverage` | `"1"` | `"100"` |
+| `adjust_position_percent` | `"0.01"` (1%) | `"0.5"` (50%) |
+| `adjust_position_time_interval` | `"1800"` (30m) | `"2419200"` (28d) |
+| `trailing_stop_percent` | `"0.05"` | `"0.99"` |
+| `sl_percent` | `"0.01"` | `"0.99"` |
+| `tp_percent` | `"0.01"` | `"100"` |
+| `adjust_position_price` | `""` | `""` (empty unless Grid-Like mode) |
 
 **Trading hours (the critical difference from crypto bots):**
 - Each asset may have a different schedule; `get-symbol-list` reports `enable_trading` per symbol
@@ -257,7 +287,8 @@ For modify settings / adjust position / transfer funds in-out, direct the user t
 POST /v5/aurora/tradficombo
 Body: { "long_block_id": "<category>", "short_block_id": "<category>" }
 # Categories: Stocks | Commodities | Forex | Indices | Metals | recommend
-# "" = unused slot. Mixed mode requires the two ids to differ.
+# "" = unused slot. Same value in both slots -> result.status_code=40010 "aurora creation empty";
+# both slots empty -> status_code=10001. retCode stays 0 either way — check result.status_code.
 
 POST /v5/mt5combobot/get-symbol-list  Body: {}
 # Returns available TradFi assets with enable_trading (true=market open) and per-symbol max leverage
@@ -275,7 +306,11 @@ Body: {
   "trailing_stop_percent": "0"
 }
 // ⚠️ PERCENT mode → do NOT include adjust_position_time_interval (omit entirely, not null)
-# Returns: init_margin.min/max, leverage.min/max, check_code
+# Returns (all as {min,max} strings): init_margin, leverage, adjust_position_percent,
+#   adjust_position_time_interval, trailing_stop_percent, sl_percent, tp_percent,
+#   adjust_position_price  + check_code / status_code / debug_msg
+# Verified mainnet: leverage 1-100, adjust_position_percent 0.01-0.5,
+#   time_interval 1800-2419200, trailing_stop 0.05-0.99
 # ⚠️ target_position_percent across all symbols MUST sum to exactly "1.0"
 
 POST /v5/mt5combobot/create
@@ -293,7 +328,8 @@ Body: {
   "init_margin": "300",                   // total investment in USD
   "trailing_stop_percent": "0.99"         // "0" = disabled; range 0.05-0.99
 }
-// NOTE: sl_percent / tp_percent are NOT supported — do not include
+// NOTE: get-limit DOES return sl_percent/tp_percent ranges, but whether create honours
+//       them is unverified. Omit both unless the user explicitly asks (see TP / SL above).
 
 POST /v5/mt5combobot/close          Body: { "bot_id": <id> }
 POST /v5/mt5combobot/get-detail     Body: { "bot_id": <id> }
