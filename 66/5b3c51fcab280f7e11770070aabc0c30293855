@@ -1,0 +1,27 @@
+SKILL.md
+  9dc5a11e0ac4c664 302,327
+modules/tradfi-bot.md
+  9dc5a11e0ac4c664 93,96
+modules/trading-bot.md
+  9dc5a11e0ac4c664 38,54,64,123,126,248,691
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.10+672fbf0",
+  "base_commit_sha": "665b3c51fcab280f7e11770070aabc0c30293855",
+  "prompts": {
+    "9dc5a11e0ac4c664": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12befb6b-e702-4669-bc62-2238578f1595",
+        "model": "claude-opus-5"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 13,
+      "total_deletions": 136,
+      "accepted_lines": 886,
+      "overriden_lines": 0
+    }
+  }
+}
