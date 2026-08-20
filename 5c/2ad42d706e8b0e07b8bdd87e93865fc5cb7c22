@@ -1,0 +1,25 @@
+modules/tradfi-bot.md
+  9dc5a11e0ac4c664 126,128
+modules/trading-bot.md
+  9dc5a11e0ac4c664 58-75,163,187-193,233-234
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.10+672fbf0",
+  "base_commit_sha": "5c2ad42d706e8b0e07b8bdd87e93865fc5cb7c22",
+  "prompts": {
+    "9dc5a11e0ac4c664": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "12befb6b-e702-4669-bc62-2238578f1595",
+        "model": "claude-opus-5"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 30,
+      "total_deletions": 6,
+      "accepted_lines": 905,
+      "overriden_lines": 0
+    }
+  }
+}
