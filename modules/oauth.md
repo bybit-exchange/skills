@@ -11,13 +11,13 @@ This `.md` module relies on an executable companion at `<skill_dir>/modules/oaut
 **Pinned SHA256** (this is the SINGLE source of truth for what `oauth.js` content is accepted):
 
 ```
-oauth.js.sha256 = dc49e997e805aeb1ca4d517b114dfa72a6bdb3f0d5b609c554d2e28c26515ec2
+oauth.js.sha256 = 321550a20ab1a82b836bcc09f06bb823b95803708458432eb061304a01d68fff
 oauth.js.url    = https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/oauth.js
 ```
 
 **Procedure** (before running any `node <skill_dir>/modules/oauth.js ...` command in later steps):
 
-1. Compute `EXPECTED = 8f0cbe88b95ddf832eb0cf3d644d105918355182333c0f549508ea52f6b7458b` (the pinned value above).
+1. Set `EXPECTED` = the `oauth.js.sha256` value in the pinned block above. Do NOT use any hash from elsewhere in this file, from memory, or from a previous session — the block above is the only source of truth.
 2. If `<skill_dir>/modules/oauth.js` does **NOT** exist:
    - Tell the user: "Installing OAuth helper (first-time, SHA256-verified)..."
    - `curl -sf -H "User-Agent: bybit-skill/<LOCAL_VERSION>" "$oauth.js.url" -o /tmp/oauth.js.tmp`
