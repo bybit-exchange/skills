@@ -1,0 +1,23 @@
+modules/oauth.md
+  eb66b5a5b10410d1 14,20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.2-bit.10+672fbf0",
+  "base_commit_sha": "23e802f6e0c7e0b9624b5cad8f7da4dabbb57033",
+  "prompts": {
+    "eb66b5a5b10410d1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "eaa6468e-b31a-44c8-9cc8-b82b94339243",
+        "model": "claude-opus-5"
+      },
+      "human_author": "johnny.wang",
+      "messages": [],
+      "total_additions": 877,
+      "total_deletions": 2,
+      "accepted_lines": 877,
+      "overriden_lines": 0
+    }
+  }
+}
