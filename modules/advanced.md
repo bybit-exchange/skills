@@ -139,7 +139,7 @@ Flexible = hourly floating rate, repay anytime with no penalty, interest accrued
 - `loanCurrency`: currency to borrow (`USDT`, `BTC`, `ETH`, …) · `loanAmount`: full-precision string
 - `collateralList`: array, each item requires **both** `currency` and `amount` (full-precision strings). Multiple collateral currencies are supported.
 - Returns `result.orderId` — use it with `borrow-history` to track the order
-- Rate limit: **1 request per time window per UID**
+- Rate limit: **1 request per time window per UID** — verified on testnet: firing several borrow calls back to back returns `10006 Too many visits` from the second one onward. Space retries out; do not loop.
 - **Rate, minimum and precision come from `GET /v5/crypto-loan-common/loanable-data`** — fields `flexibleAnnualizedInterestRate`, `minFlexibleBorrowingAmount`, `flexibleBorrowingAccuracy`. Quote the rate from there before showing the confirmation card, and use the minimum/precision to avoid `148002` / `148003`.
 - `available-inventory` returns **only pool capacity** (`currency`, `availableInventory`, `updateTime`) — **it carries no rate.** Use it to check the pool can cover the amount, never to quote an interest rate.
 - Compute LTV before borrowing — the rate floats hourly, so re-read it if the user takes a while to confirm
@@ -149,6 +149,8 @@ Flexible = hourly floating rate, repay anytime with no penalty, interest accrued
 POST /v5/crypto-loan-flexible/borrow
 {"loanCurrency":"USDT","loanAmount":"10000","collateralList":[{"currency":"BTC","amount":"0.5"}]}
 ```
+
+⚠️ **`retMsg` for these codes is a SCREAMING_SNAKE identifier, not prose** — e.g. `148001` → `TOKEN_NOT_SUPPORT_FLEXIBLE_LOAN`, `148002` → `LOAN_QUANTITY_NOT_ALLOWED`, `10001` → `ILLEGAL_PARAMETER` (verified on testnet). Branch on `retCode`, never on `retMsg` text. Also note the checks short-circuit: an invalid `loanAmount` is rejected before the collateral is looked at, so a `148002` does not mean the rest of the body was accepted.
 
 Error codes: `148001` currency not supported for flexible loan · `148002` amount below minimum · `148003` amount exceeds precision · `148004` collateral currency not supported · `148005` collateral amount exceeds precision · `148009` LTV exceeds threshold · `148010` insufficient user quota · `148011` insufficient lending pool balance · `148012` insufficient collateral amount · `148013` non-borrowing users cannot operate · `148014` currency not supported · `148020` insufficient platform quota · `148021` operation conflict · `148031` operation not allowed during liquidation · `148048` collateral amount exceeded platform limit (transfer in other supported assets as collateral) · `100109` copy-trading users cannot use crypto loan · `10006` rate limit exceeded · `10016` server error.
 
