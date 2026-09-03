@@ -299,8 +299,7 @@ Tell the user what they can do. Examples:
 | websocket, stream, loan, borrow, repay, RFQ, block trade, spread, lending, broker, rate limit | **advanced** | `modules/advanced.md` | — |
 | P2P, peer to peer, advertisement, ad, OTC, fiat, fiat buy, fiat sell, convert fiat | **fiat** | `modules/fiat.md` | — |
 | copy trading, leader, follower, copy trade, leaderboard, recommend trader | **copy-trading** | `modules/copy-trading.md` | derivatives, account |
-| grid bot, DCA bot, martingale, combo bot, trading bot, create bot, close bot | **trading-bot** | `modules/trading-bot.md` | account, derivatives |
-| TradFi Combo, MT5 combo, tradfi bot, stock portfolio bot, commodity portfolio bot, rebalance bot, XAUUSD+, XAGUSD, USOUSD, 股票组合机器人, 大宗商品组合, 传统金融机器人, 组合调仓机器人 | **tradfi-bot** | `modules/tradfi-bot.md` | account, trading-bot |
+| grid bot, DCA bot, martingale, combo bot, trading bot, create bot, close bot, TradFi Combo, MT5 combo, tradfi bot, stock portfolio bot, commodity portfolio bot, rebalance bot, XAUUSD+, XAGUSD, USOUSD, 股票组合机器人, 大宗商品组合, 传统金融机器人, 组合调仓机器人 | **trading-bot** | `modules/trading-bot.md` | account, derivatives |
 | alpha, on-chain, DEX, meme coin, swap token, on-chain asset, token trade, prediction, prediction market, bet, betting, YES/NO, sports market, World Cup, FIFA, event trading | **alpha-trade** | `modules/alpha-trade.md` | account |
 | TWAP, iceberg, chase order, chaseOrder, strategy order, split order, algorithmic, POV, percentage of volume, volume participation | **strategy** | `modules/strategy.md` | account |
 | xStocks, tokenized stock, commodity perpetual, XAUUSDT, XAGUSDT, CLUSDT, crude oil, buy/sell TradFi, metals agreement, oil agreement | **tradfi** | `modules/tradfi.md` | account, spot, derivatives |
@@ -310,7 +309,7 @@ Tell the user what they can do. Examples:
 
 **Module-specific notes:**
 
-- **⚠️ `tradfi` vs `tradfi-bot` (easy to confuse)**: `tradfi` = trading TradFi assets **yourself** (tokenized stocks `TSLAXUSDT`, commodity perps `XAUUSDT`/`CLUSDT`) via standard V5 order endpoints. `tradfi-bot` = the **TradFi Combo auto-rebalancing portfolio bot** over MT5 instruments (`XAUUSD+`, `XAGUSD`, `USOUSD`) via `/v5/mt5combobot/*`. Different symbols, different endpoints. "Buy some gold" → `tradfi`. "Build me a gold+oil portfolio bot" → `tradfi-bot`. If genuinely ambiguous, ask which one.
+- **⚠️ `tradfi` vs TradFi Combo in `trading-bot` (easy to confuse)**: `tradfi` = trading TradFi assets **yourself** (tokenized stocks `TSLAXUSDT`, commodity perps `XAUUSDT`/`CLUSDT`) via standard V5 order endpoints. The **TradFi Combo auto-rebalancing portfolio bot** over MT5 instruments (`XAUUSD+`, `XAGUSD`, `USOUSD`) via `/v5/mt5combobot/*` lives in the **TradFi Combo section of `modules/trading-bot.md`**. Different symbols, different endpoints. "Buy some gold" → `tradfi`. "Build me a gold+oil portfolio bot" → `trading-bot`. **A bare mention of "TradFi Combo" / "MT5 combo" / a stock-or-commodity portfolio bot must route to `trading-bot`, NOT to `tradfi` — `tradfi.md` does not document `/v5/mt5combobot/*` at all.** If genuinely ambiguous, ask which one.
 - **Derivatives**: Conditional orders require `triggerDirection`: `1`=price rises above trigger, `2`=price falls below trigger. Buy-the-dip → `2`, breakout buy → `1`.
 - **Fiat/P2P**: P2P responses use `ret_code` (underscore format, not `retCode`). P2P ad posting requires General Advertiser+ permission level.
 - **Spot ↔ Convert fallback**: Spot order endpoints (`/v5/order/create`) only support listed spot pairs (base + quote where quote ∈ `USDT`/`USDC`/`USDE`/`BTC`/`ETH`/`EUR`/`BRL`). If the user names a base-base pair (e.g., `BTCDOGE`, `ETHSOL`, `SOLPEPE`) or any pair you cannot confirm is a listed spot symbol, **do NOT call spot order create**. Route to Convert via the `/v5/asset/exchange/*` endpoints in the account module: (1) `query-coin-list` to confirm both coins are convertible, (2) `quote-apply` to lock a quote, (3) user `CONFIRM`, (4) `convert-execute` before the quote expires (typically ~5s). When suggesting this fallback, tell the user that the pair is not a listed spot symbol and propose Convert instead — surface `fromCoin`, `toCoin`, `requestAmount`, quote price, and `expireTime` in the confirmation.
@@ -324,7 +323,7 @@ Tell the user what they can do. Examples:
 ### Routing Notes
 
 - Keywords are **hints, not strict rules** — always use semantic understanding of the user's full request to determine the correct module(s). When ambiguous (e.g., "borrow" could mean spot margin or advanced lending), prefer the module matching the broader conversation context, or ask the user to clarify.
-- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐 → trading-bot, 组合机器人/调仓机器人/股票组合/大宗商品组合/传统金融机器人 → tradfi-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 买入代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 打新/新币挖矿/launchpool/拼图/代币空投/活动列表/质押活动 → activity, 授权/登录/连接Bybit/OAuth → oauth
+- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐/组合机器人/调仓机器人/股票组合/大宗商品组合/传统金融机器人 → trading-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 买入代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 打新/新币挖矿/launchpool/拼图/代币空投/活动列表/质押活动 → activity, 授权/登录/连接Bybit/OAuth → oauth
 
 ### Loading Rules
 
