@@ -66,7 +66,7 @@ User might say: "check all my earn positions", "show all earn", "earn overview",
 
 ## Scenario: Earn Products
 
-User might say: "Show me available earn products", "Deposit USDT", "Redeem"
+User might say: "Show me available earn products", "Deposit USDT", "Redeem", "auto reinvest my OnChain position", "APR history"
 
 ```
 GET  /v5/earn/product?category=FlexibleSaving&coin=USDT
@@ -94,9 +94,11 @@ GET  /v5/earn/hourly-yield?category=FlexibleSaving
 
 **Enums**: orderType: `Stake`|`Redeem` · category: `FlexibleSaving`|`OnChain`
 
-> **APR History** (`/v5/earn/apr-history`): **all four params are required** — `category` (`FlexibleSaving`|`OnChain` only), `productId` (string), `startTime`, `endTime`. Read-only historical APR; use it when the user asks how a product's rate has moved rather than quoting only the current APR.
+> **APR History** (`/v5/earn/apr-history`): **all four params are required** — `category` (`FlexibleSaving`|`OnChain` only), `productId` (string), `startTime`, `endTime`. Read-only historical APR; use it when the user asks how a product's rate has moved rather than quoting only the current APR. **Max query range is 182 days** — for a longer window (e.g. "past year") split it into ≤182-day chunks, do not send one oversized request. Record granularity differs by category: `FlexibleSaving` returns **hourly** records, `OnChain` returns **daily**. Results come back **descending** by time.
 
 > **Modify Position** (`/v5/earn/position/modify`): toggles auto-reinvest on a **fixed-term OnChain** position. `category` accepts **`OnChain` only**. `productId` and `positionId` are **integers** (not strings) — get them from `/v5/earn/product` and `/v5/earn/position`. `autoReinvest`: `0` disable, `1` enable. Flexible-term positions do not support auto-reinvest and return **`180028`**. Enabling can be blocked by business rules (inventory caps, APY decrease, …); disabling is always permitted **except** inside the forbidden window before settlement. Mainnet: this is a write operation — follow the Structured Operation Confirmation flow.
+>
+> ⚠️ **Two different auto-reinvest toggles exist — pick by product category.** This one (`/v5/earn/position/modify`, integer `autoReinvest`: `0`|`1`) is for fixed-term **OnChain** positions. For **FundPool** fixed-term positions use `/v5/earn/fixed-term/position/auto-invest` instead (string `status`: `Enable`|`Disable`) — see *Scenario: Fixed Term*. If the user just says "turn on auto reinvest", determine the position's category first (`/v5/earn/position` or `/v5/earn/fixed-term/position`) rather than guessing an endpoint.
 
 > **Coupons** (`/v5/earn/coupons`, category: `FlexibleSaving`|`DualAssets`): returns user's `interestCards` (interest-rate coupons) and `awardCards` (Dual Assets reward cards / trial funds). Card status: `InUse`|`NotUse`|`Expired`|`AlreadyUsed`. To apply when staking, pass `interestCard:{awardId, specCode}` to `/v5/earn/place-order` (FlexibleSaving Stake) or `/v5/earn/advance/place-order` (DualAssets). Rate limit: 10 req/s (UID).
 
@@ -140,7 +142,7 @@ POST /v5/earn/fixed-term/position/auto-invest
 | Position | `/v5/earn/fixed-term/position` | GET | Yes | 10/s | — | productId, category, coin |
 | Order | `/v5/earn/fixed-term/order` | GET | Yes | 10/s | — | orderType, productId, category, orderId, startTime, endTime, limit, cursor |
 
-> **`status` enum** (auto-invest): `Enable` \| `Disable` (string — **not a boolean**). When `productId` is passed to `order` history, `category` must also be supplied.
+> **`status` enum** (auto-invest): `Enable` \| `Disable` (string — **not a boolean**). ⚠️ This endpoint covers **FundPool** fixed-term positions. For fixed-term **OnChain** positions use `/v5/earn/position/modify` instead (integer `autoReinvest`: `0`|`1`) — see *Scenario: Earn Products*. When `productId` is passed to `order` history, `category` must also be supplied.
 
 **Enums**: category: `FixedTermSaving`|`FundPool`|`FundPoolPremium` · status: `Available`|`SoldOut`|`NotStarted` · orderType: `Stake`|`Redeem`|`Reinvest` · accountType: `FUND`|`UNIFIED`
 
@@ -432,7 +434,7 @@ GET /v5/earn/token/history-apr?coin=BYUSDT&range=2
 | Product Info | `/v5/earn/token/product` | GET | No | coin | — |
 | Yield History | `/v5/earn/token/yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/token/hourly-yield` | GET | Yes | coin | startTime, endTime, limit, cursor |
-| APR History | `/v5/earn/token/history-apr` | GET | No | coin, range | — |
+| BYUSDT APR History | `/v5/earn/token/history-apr` | GET | No | coin, range | — |
 
 ---
 

@@ -63,6 +63,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Adjust LTV | `/v5/crypto-loan-common/adjust-ltv` | POST | currency, amount, direction | — |
 | Adjustment History | `/v5/crypto-loan-common/adjustment-history` | GET | — | currency, limit, cursor |
 
+> **`loanable-data` is where interest rates live** — `flexibleAnnualizedInterestRate` (flexible loans) and `annualizedInterestRate7D`/`14D`/`30D`/`60D`/`90D`/`180D` (fixed terms), plus `minFlexibleBorrowingAmount` and `flexibleBorrowingAccuracy`. Quote rates from here. The `available-inventory` endpoints in the Fixed Term / Flexible sections return **pool capacity only** and carry no rate.
+
 ### Crypto Loan — Fixed Term (authentication required)
 
 | Endpoint | Path | Method | Required Params | Optional Params |
@@ -110,7 +112,9 @@ Flexible = hourly floating rate, repay anytime with no penalty, interest accrued
 - `collateralList`: array, each item requires **both** `currency` and `amount` (full-precision strings). Multiple collateral currencies are supported.
 - Returns `result.orderId` — use it with `borrow-history` to track the order
 - Rate limit: **1 request per time window per UID**
-- Check `available-inventory` for current rates, and compute LTV before borrowing — the rate can change hourly
+- **Rate, minimum and precision come from `GET /v5/crypto-loan-common/loanable-data`** — fields `flexibleAnnualizedInterestRate`, `minFlexibleBorrowingAmount`, `flexibleBorrowingAccuracy`. Quote the rate from there before showing the confirmation card, and use the minimum/precision to avoid `148002` / `148003`.
+- `available-inventory` returns **only pool capacity** (`currency`, `availableInventory`, `updateTime`) — **it carries no rate.** Use it to check the pool can cover the amount, never to quote an interest rate.
+- Compute LTV before borrowing — the rate floats hourly, so re-read it if the user takes a while to confirm
 
 ```
 POST /v5/crypto-loan-flexible/borrow
