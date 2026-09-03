@@ -1,6 +1,12 @@
 # Module: Advanced Features
 
 > This module is loaded on-demand by the Bybit Trading Skill. Authentication required for most endpoints.
+>
+> **Execution Constraints:** this module contains many state-changing endpoints. On Mainnet every one of them MUST go through the **Structured Operation Confirmation** flow in SKILL.md — present the confirmation card and wait for the user to type `CONFIRM` before sending the request. This applies to all of them, not only the ones with extra notes below: crypto-loan borrow / supply / repay / repay-collateral / renew / order-cancel / adjust-ltv, institutional-loan association-uid and repay-loan, RFQ create-rfq / create-quote / execute-quote / accept-other-quote / cancel-*, spread order create / amend / cancel, and broker apilimit/set. `One CONFIRM = one operation` — a confirmation authorizes exactly the amounts and params shown on the card the user just saw; if anything changes after they confirm, show a delta card and wait for a fresh `CONFIRM`.
+>
+> **Exception — `POST /v5/crypto-loan-common/max-loan` is read-only** ("calculate max borrowable amount"). It uses POST only to carry a `collateralList` body and changes no state, so it needs **no** confirmation on any environment. Do not gate a risk calculation behind `CONFIRM`.
+>
+> Borrow operations additionally require risk disclosure on the card — see **Borrow confirmation card** below.
 
 ## WebSocket
 
@@ -59,11 +65,31 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Collateral Data | `/v5/crypto-loan-common/collateral-data` | GET | — | — |
 | Loanable Data | `/v5/crypto-loan-common/loanable-data` | GET | — | — |
 | Max Collateral Amount | `/v5/crypto-loan-common/max-collateral-amount` | GET | currency | — |
-| Max Loan | `/v5/crypto-loan-common/max-loan` | GET | currency | — |
+| Max Loan | `/v5/crypto-loan-common/max-loan` | POST | currency, collateralList | — |
 | Adjust LTV | `/v5/crypto-loan-common/adjust-ltv` | POST | currency, amount, direction | — |
 | Adjustment History | `/v5/crypto-loan-common/adjustment-history` | GET | — | currency, limit, cursor |
 
 > **`loanable-data` is where interest rates live** — `flexibleAnnualizedInterestRate` (flexible loans) and `annualizedInterestRate7D`/`14D`/`30D`/`60D`/`90D`/`180D` (fixed terms), plus `minFlexibleBorrowingAmount` and `flexibleBorrowingAccuracy`. Quote rates from here. The `available-inventory` endpoints in the Fixed Term / Flexible sections return **pool capacity only** and carry no rate.
+
+> ⚠️ **`collateralList` item field name differs between endpoints.** `max-loan` uses **`ccy`**; both `crypto-loan-fixed/borrow` and `crypto-loan-flexible/borrow` use **`currency`**. Since the natural flow is *check max-loan → then borrow*, do **not** reuse the same JSON array across the two calls — rename the key, or the borrow request fails with a params error.
+
+### Borrow confirmation card (applies to both fixed and flexible borrow)
+
+Borrowing creates a **debt liability plus a collateral lock**, and collateral can be liquidated. Mainnet borrow MUST use the Structured Operation Confirmation flow, and the card MUST show enough for the user to judge the risk — not just the amount. Include:
+
+| On the card | Source |
+|---|---|
+| Loan currency + amount | the user's request (`loanCurrency`/`orderCurrency`, `loanAmount`/`orderAmount`) |
+| **Every** collateral currency + amount | the user's request (`collateralList[]`) — list each one, never summarize as "collateral" |
+| Current interest rate | `GET /v5/crypto-loan-common/loanable-data` → `flexibleAnnualizedInterestRate` (flexible) or `annualizedInterestRate<term>` (fixed). **For flexible, state that the rate floats hourly and the shown figure is the rate at this moment.** |
+| Applicable collateral ratio (the ceiling that bounds the loan) | `GET /v5/crypto-loan-common/collateral-data` → `collateralRatioConfigList[].collateralRatioList[]`, pick the tier whose `minValue`–`maxValue` band contains the collateral's USD value; show that tier's `collateralRatio` |
+| Which collateral gets sold first if liquidation happens | same endpoint → `currencyLiquidationList[].liquidationOrder` (lower = liquidated earlier) |
+| Headroom (optional but preferred) | `POST /v5/crypto-loan-common/max-loan` with `currency` + `collateralList[{ccy, amount}]` — note the `ccy` key |
+| Term + repayment terms (fixed only) | the user's request: `term`, `autoRepay`, `repayType` |
+
+**Do not invent a liquidation price or a "liquidation threshold" figure — no such field exists in the API.** The retrievable risk quantities are the tiered `collateralRatio` and `liquidationOrder` above. Post-borrow, `GET /v5/crypto-loan-common/position` returns the live `ltv` (`totalDebt / totalCollateral`, `"0"` when there are no active loans) — use that for ongoing monitoring, and tell the user they can watch it there. If the rate or collateral ratio cannot be fetched, say so on the card rather than omitting the line silently or guessing a number.
+
+Server-side guard, not a substitute for the card: `148009` means the LTV would exceed the allowed threshold and the borrow is rejected.
 
 ### Crypto Loan — Fixed Term (authentication required)
 
@@ -78,6 +104,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 | Full Repay | `/v5/crypto-loan-fixed/fully-repay` | POST | orderId | — |
 | Repay Collateral | `/v5/crypto-loan-fixed/repay-collateral` | POST | orderId | — |
 | Repayment History | `/v5/crypto-loan-fixed/repayment-history` | GET | — | repayId |
+
+> **Fixed-term borrow is a Mainnet write with a term commitment** — `POST /v5/crypto-loan-fixed/borrow` locks collateral for the chosen `term`. Follow the Structured Operation Confirmation flow and use the **Borrow confirmation card** contents above; `annualRate` is the rate the user is committing to, so show it explicitly alongside the term and `autoRepay`/`repayType`.
 | Renewal Info | `/v5/crypto-loan-fixed/renew-info` | GET | orderId | — |
 | Renew | `/v5/crypto-loan-fixed/renew` | POST | orderId | — |
 | Supply Contract Info | `/v5/crypto-loan-fixed/supply-contract-info` | GET | supplyCurrency | — |
@@ -115,6 +143,7 @@ Flexible = hourly floating rate, repay anytime with no penalty, interest accrued
 - **Rate, minimum and precision come from `GET /v5/crypto-loan-common/loanable-data`** — fields `flexibleAnnualizedInterestRate`, `minFlexibleBorrowingAmount`, `flexibleBorrowingAccuracy`. Quote the rate from there before showing the confirmation card, and use the minimum/precision to avoid `148002` / `148003`.
 - `available-inventory` returns **only pool capacity** (`currency`, `availableInventory`, `updateTime`) — **it carries no rate.** Use it to check the pool can cover the amount, never to quote an interest rate.
 - Compute LTV before borrowing — the rate floats hourly, so re-read it if the user takes a while to confirm
+- **Mainnet: follow the Structured Operation Confirmation flow — see "Borrow confirmation card" above for what the card MUST show.** Borrowing creates a debt liability and locks collateral that can be liquidated; do not send this request before the user types `CONFIRM`.
 
 ```
 POST /v5/crypto-loan-flexible/borrow
