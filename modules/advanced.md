@@ -25,7 +25,7 @@ URL: `wss://stream.bybit.com/v5/private`
 
 | Topic | Description |
 |-------|-------------|
-| `position` | Position changes |
+| `position` | Position changes (payload includes `netDeltaRatio`, all categories) |
 | `execution` | Execution updates |
 | `order` | Order status updates |
 | `wallet` | Balance changes |
