@@ -89,8 +89,14 @@ GET  /v5/earn/hourly-yield?category=FlexibleSaving
 | Yield | `/v5/earn/yield` | GET | category | productId, startTime, endTime, limit, cursor |
 | Hourly Yield | `/v5/earn/hourly-yield` | GET | category | productId, startTime, endTime, limit, cursor |
 | List Coupons | `/v5/earn/coupons` | GET | category | — |
+| APR History | `/v5/earn/apr-history` | GET | category, productId, startTime, endTime | — |
+| Modify Position | `/v5/earn/position/modify` | POST | category, productId, positionId, autoReinvest | — |
 
 **Enums**: orderType: `Stake`|`Redeem` · category: `FlexibleSaving`|`OnChain`
+
+> **APR History** (`/v5/earn/apr-history`): **all four params are required** — `category` (`FlexibleSaving`|`OnChain` only), `productId` (string), `startTime`, `endTime`. Read-only historical APR; use it when the user asks how a product's rate has moved rather than quoting only the current APR.
+
+> **Modify Position** (`/v5/earn/position/modify`): toggles auto-reinvest on a **fixed-term OnChain** position. `category` accepts **`OnChain` only**. `productId` and `positionId` are **integers** (not strings) — get them from `/v5/earn/product` and `/v5/earn/position`. `autoReinvest`: `0` disable, `1` enable. Flexible-term positions do not support auto-reinvest and return **`180028`**. Enabling can be blocked by business rules (inventory caps, APY decrease, …); disabling is always permitted **except** inside the forbidden window before settlement. Mainnet: this is a write operation — follow the Structured Operation Confirmation flow.
 
 > **Coupons** (`/v5/earn/coupons`, category: `FlexibleSaving`|`DualAssets`): returns user's `interestCards` (interest-rate coupons) and `awardCards` (Dual Assets reward cards / trial funds). Card status: `InUse`|`NotUse`|`Expired`|`AlreadyUsed`. To apply when staking, pass `interestCard:{awardId, specCode}` to `/v5/earn/place-order` (FlexibleSaving Stake) or `/v5/earn/advance/place-order` (DualAssets). Rate limit: 10 req/s (UID).
 

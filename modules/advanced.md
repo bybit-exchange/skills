@@ -94,12 +94,30 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 | Endpoint | Path | Method | Required Params | Optional Params |
 |----------|------|--------|----------------|-----------------|
+| Place Borrow | `/v5/crypto-loan-flexible/borrow` | POST | loanCurrency, loanAmount, collateralList | — |
 | Repay | `/v5/crypto-loan-flexible/repay` | POST | loanCoin, repayAmount | — |
 | Repay Collateral | `/v5/crypto-loan-flexible/repay-collateral` | POST | orderId | — |
 | Available Inventory | `/v5/crypto-loan-flexible/available-inventory` | GET | currency | — |
 | Ongoing Coins | `/v5/crypto-loan-flexible/ongoing-coin` | GET | — | loanCurrency |
 | Borrow History | `/v5/crypto-loan-flexible/borrow-history` | GET | — | orderId, loanCurrency, limit, cursor |
 | Repayment History | `/v5/crypto-loan-flexible/repayment-history` | GET | — | repayId, loanCurrency, limit, cursor |
+
+**Place Borrow notes** (`/v5/crypto-loan-flexible/borrow`)
+
+Flexible = hourly floating rate, repay anytime with no penalty, interest accrued on actual duration. Use this instead of `crypto-loan-fixed/borrow` when the user wants short-term or open-ended borrowing.
+
+- `loanCurrency`: currency to borrow (`USDT`, `BTC`, `ETH`, …) · `loanAmount`: full-precision string
+- `collateralList`: array, each item requires **both** `currency` and `amount` (full-precision strings). Multiple collateral currencies are supported.
+- Returns `result.orderId` — use it with `borrow-history` to track the order
+- Rate limit: **1 request per time window per UID**
+- Check `available-inventory` for current rates, and compute LTV before borrowing — the rate can change hourly
+
+```
+POST /v5/crypto-loan-flexible/borrow
+{"loanCurrency":"USDT","loanAmount":"10000","collateralList":[{"currency":"BTC","amount":"0.5"}]}
+```
+
+Error codes: `148001` currency not supported for flexible loan · `148002` amount below minimum · `148003` amount exceeds precision · `148004` collateral currency not supported · `148005` collateral amount exceeds precision · `148009` LTV exceeds threshold · `148010` insufficient user quota · `148011` insufficient lending pool balance · `148012` insufficient collateral amount · `148013` non-borrowing users cannot operate · `148014` currency not supported · `148020` insufficient platform quota · `148021` operation conflict · `148031` operation not allowed during liquidation · `148048` collateral amount exceeded platform limit (transfer in other supported assets as collateral) · `100109` copy-trading users cannot use crypto loan · `10006` rate limit exceeded · `10016` server error.
 
 ---
 
