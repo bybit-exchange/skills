@@ -11,7 +11,7 @@ This `.md` module relies on an executable companion at `<skill_dir>/modules/oaut
 **Pinned SHA256** (this is the SINGLE source of truth for what `oauth.js` content is accepted):
 
 ```
-oauth.js.sha256 = ecdf41fccefe07c5e2ab3c6ef9e0a2db11e5badbd1005d628354314730f59b0a
+oauth.js.sha256 = 7fca44a9cb6afa4dfd1ed15475d5de774468add0b53933eebfa3de4f4158a390
 oauth.js.url    = https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/oauth.js
 ```
 

@@ -279,8 +279,12 @@ async function exchangeAndSave(args) {
   // Step 2: Get AI sub-account credentials
   let aiAccountUrl = host.ai_accounts;
   const params = [];
+  if (args.subMemberId && args.isCreate) {
+    process.stdout.write(JSON.stringify({ success: false, error: "invalid_args", message: "--sub-member-id and --is-create are mutually exclusive" }) + "\n");
+    process.exit(1);
+  }
   if (args.subMemberId) {
-    params.push(`sub_member_id=${args.subMemberId}`);
+    params.push(`sub_member_id=${encodeURIComponent(args.subMemberId)}`);
   }
   if (args.isCreate) {
     params.push("is_create=true");
@@ -311,24 +315,6 @@ async function exchangeAndSave(args) {
   const aiResult = aiResp.result || aiResp;
 
   const accountList = Array.isArray(aiResult) ? aiResult : (aiResult?.accounts ? aiResult.accounts : null);
-
-  if (Array.isArray(accountList) && accountList.length > 0 && accountList[0].api_key) {
-    const aiAccount = accountList[0];
-    credential["ai-account"] = {
-      sub_member_id: aiAccount.sub_member_id,
-      api_key: aiAccount.api_key,
-      api_secret: aiAccount.api_secret,
-    };
-    fs.writeFileSync(credPath, JSON.stringify(credential, null, 2), { mode: 0o600 });
-    process.stdout.write(JSON.stringify({
-      success: true,
-      step: "complete",
-      credential_path: credPath,
-      sub_member_id: aiAccount.sub_member_id,
-      api_key_masked: maskKey(aiAccount.api_key),
-    }) + "\n");
-    process.exit(0);
-  }
 
   if (Array.isArray(accountList)) {
     const accounts = accountList.map((a) => ({
