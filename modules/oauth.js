@@ -149,6 +149,71 @@ function maskKey(key) {
   return key.slice(0, 5) + "..." + key.slice(-4);
 }
 
+function emitAndExit(initFile, result) {
+  fs.writeFileSync(initFile, JSON.stringify(result), { mode: 0o600 });
+  process.stdout.write(JSON.stringify(result) + "\n");
+  process.exit(0);
+}
+
+function buildQuickResult(status, credPath, initFile, cred, extra) {
+  const result = { status, credential_path: credPath, init_file: initFile };
+  if (status === "already_authorized") {
+    result.sub_member_id = cred["ai-account"].sub_member_id;
+    result.api_key_masked = maskKey(cred["ai-account"].api_key);
+  }
+  return Object.assign(result, extra);
+}
+
+async function quickAuthMode(args) {
+  const credPath = getCredentialPath();
+  const host = HOSTS[args.env];
+  const initFile = getInitFilePath(args.output);
+
+  fs.mkdirSync(path.dirname(initFile), { recursive: true, mode: 0o700 });
+
+  if (fs.existsSync(credPath)) {
+    try {
+      const cred = JSON.parse(fs.readFileSync(credPath, "utf8"));
+      const now = Math.floor(Date.now() / 1000);
+      const tokenValid = cred.access_token && cred.env === args.env &&
+                          (now - cred.created_at) < cred.expires_in;
+      const hasAiAccount = cred["ai-account"] && cred["ai-account"].api_key;
+
+      if (tokenValid && hasAiAccount) {
+        emitAndExit(initFile, buildQuickResult("already_authorized", credPath, initFile, cred));
+      }
+
+      if (tokenValid) {
+        emitAndExit(initFile, buildQuickResult("needs_sub_account", credPath, initFile, cred));
+      }
+
+      if (cred.refresh_token && cred.env === args.env &&
+          (now - cred.created_at) < (cred.refresh_token_expires_in || 2592000)) {
+        try {
+          const refreshResp = await httpPost(host.refresh, {
+            client_id: CLIENT_ID,
+            refresh_token: cred.refresh_token,
+          });
+          if (refreshResp && (refreshResp.retCode === undefined || refreshResp.retCode === 0)) {
+            const t = refreshResp.result || refreshResp;
+            cred.access_token = t.access_token;
+            cred.refresh_token = t.refresh_token;
+            cred.created_at = Math.floor(Date.now() / 1000);
+            cred.expires_in = t.expires_in || cred.expires_in || 86400;
+            cred.refresh_token_expires_in = t.refresh_token_expires_in || cred.refresh_token_expires_in || 2592000;
+            fs.writeFileSync(credPath, JSON.stringify(cred, null, 2), { mode: 0o600 });
+
+            const status = hasAiAccount ? "already_authorized" : "needs_sub_account";
+            emitAndExit(initFile, buildQuickResult(status, credPath, initFile, cred, { refreshed: true }));
+          }
+        } catch (e) { /* refresh failed, fall through to new auth */ }
+      }
+    } catch (e) { /* parse error, fall through to new auth */ }
+  }
+
+  await main(args);
+}
+
 async function exchangeAndSave(args) {
   const callbackFile = args.exchange;
   const host = HOSTS[args.env];
@@ -245,8 +310,26 @@ async function exchangeAndSave(args) {
 
   const aiResult = aiResp.result || aiResp;
 
-  // Always prompt selection when accounts are returned as a list (including empty list)
   const accountList = Array.isArray(aiResult) ? aiResult : (aiResult?.accounts ? aiResult.accounts : null);
+
+  if (Array.isArray(accountList) && accountList.length > 0 && accountList[0].api_key) {
+    const aiAccount = accountList[0];
+    credential["ai-account"] = {
+      sub_member_id: aiAccount.sub_member_id,
+      api_key: aiAccount.api_key,
+      api_secret: aiAccount.api_secret,
+    };
+    fs.writeFileSync(credPath, JSON.stringify(credential, null, 2), { mode: 0o600 });
+    process.stdout.write(JSON.stringify({
+      success: true,
+      step: "complete",
+      credential_path: credPath,
+      sub_member_id: aiAccount.sub_member_id,
+      api_key_masked: maskKey(aiAccount.api_key),
+    }) + "\n");
+    process.exit(0);
+  }
+
   if (Array.isArray(accountList)) {
     const accounts = accountList.map((a) => ({
       sub_member_id: a.sub_member_id,
@@ -263,7 +346,6 @@ async function exchangeAndSave(args) {
     process.exit(0);
   }
 
-  // Specific sub_member_id selected (or non-array response) — has credentials
   const aiAccount = aiResult;
   if (aiAccount && aiAccount.api_key) {
     credential["ai-account"] = {
@@ -293,7 +375,7 @@ async function exchangeAndSave(args) {
 }
 
 function parseArgs() {
-  const args = { port: 9876, output: getDefaultOutputPath(), env: "unify-test-3", exchange: null, subMemberId: null, isCreate: false, headless: false, manualCode: null, initFile: null };
+  const args = { port: 9876, output: getDefaultOutputPath(), env: "unify-test-3", exchange: null, subMemberId: null, isCreate: false, headless: false, manualCode: null, initFile: null, quickAuth: false };
   for (let i = 2; i < process.argv.length; i++) {
     if (process.argv[i] === "--port" && process.argv[i + 1]) {
       args.port = parseInt(process.argv[++i], 10);
@@ -313,6 +395,8 @@ function parseArgs() {
       args.manualCode = process.argv[++i];
     } else if (process.argv[i] === "--init-file" && process.argv[i + 1]) {
       args.initFile = process.argv[++i];
+    } else if (process.argv[i] === "--quick-auth") {
+      args.quickAuth = true;
     }
   }
   if (!HOSTS[args.env]) {
@@ -532,6 +616,8 @@ if (require.main === module) {
   let run;
   if (args.exchange) {
     run = exchangeAndSave(args);
+  } else if (args.quickAuth) {
+    run = quickAuthMode(args);
   } else if (args.headless) {
     run = headlessMode(args);
   } else if (args.manualCode) {

@@ -11,7 +11,7 @@ This `.md` module relies on an executable companion at `<skill_dir>/modules/oaut
 **Pinned SHA256** (this is the SINGLE source of truth for what `oauth.js` content is accepted):
 
 ```
-oauth.js.sha256 = 321550a20ab1a82b836bcc09f06bb823b95803708458432eb061304a01d68fff
+oauth.js.sha256 = ecdf41fccefe07c5e2ab3c6ef9e0a2db11e5badbd1005d628354314730f59b0a
 oauth.js.url    = https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/oauth.js
 ```
 
@@ -51,6 +51,35 @@ Extract `{{domain}}` and map it to the `--env` parameter:
 | `www.unify-test-3.bybit.com` | unify-test-3 |
 
 Then proceed with the flow below using the resolved env.
+
+## Quick Auth (Recommended — single command)
+
+**Use this instead of Steps 1–3 for faster link generation.** This combines credential check, token refresh, and URL generation into one command. Falls back to the detailed steps only if `--quick-auth` is unavailable.
+
+**Bootstrap + Quick Auth in one command:**
+
+If `<skill_dir>/modules/oauth.js` does **NOT** exist, run the Bootstrap download procedure above first. If it already exists:
+
+```bash
+EXPECTED="<pinned oauth.js.sha256 from Bootstrap section>" && \
+ACTUAL=$(shasum -a 256 "<skill_dir>/modules/oauth.js" | cut -d' ' -f1) && \
+[ "$EXPECTED" = "$ACTUAL" ] && \
+node <skill_dir>/modules/oauth.js --quick-auth --port 9876 --env <resolved_env>
+```
+
+Run with `run_in_background`. The process writes the init file before doing anything else (including starting the server), so it is safe to read the init file as soon as the background task reports completion — or after a short delay (~500ms) if the process stays running (new auth path). Branch on the `status` field:
+
+| `status` | Meaning | Next action |
+|-----------|---------|-------------|
+| `already_authorized` | Valid token + AI sub-account credentials exist | Done — report credentials to user (Step 8 format). No further steps. |
+| `needs_sub_account` | Valid token but no AI sub-account selected | Skip to OAuth Step 6 (fetch AI sub-accounts). |
+| *(init file contains `authorize_url`)* | No valid token — server started, URL ready | Display the `authorize_url` to the user and proceed to OAuth Step 3 (poll for callback). |
+
+**`already_authorized` includes auto-refresh**: if the token was expired but `refresh_token` was still valid, `--quick-auth` refreshes it automatically. The response includes `"refreshed": true` when this happens.
+
+If `status` is absent and `authorize_url` is present, the flow has fallen through to new authorization — proceed with Step 3 (display link + poll) as normal.
+
+---
 
 ## OAuth Host Mapping
 
