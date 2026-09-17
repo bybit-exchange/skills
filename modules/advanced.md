@@ -73,6 +73,8 @@ Auth: `{"op": "auth", "args": ["<apiKey>", "<expires>", "<signature>"]}`
 
 > ⚠️ **`collateralList` item field name differs between endpoints.** `max-loan` uses **`ccy`**; both `crypto-loan-fixed/borrow` and `crypto-loan-flexible/borrow` use **`currency`**. Since the natural flow is *check max-loan → then borrow*, do **not** reuse the same JSON array across the two calls — rename the key, or the borrow request fails with a params error.
 
+> ⚠️ **Error `148049` — "This service is not available in your region."** Returned by `crypto-loan-common/adjust-ltv`, `crypto-loan-fixed/borrow`, `crypto-loan-fixed/supply` and `crypto-loan-flexible/borrow`. This is a **regulatory/region restriction, not a parameter problem** — do not retry, do not tweak params, and do not suggest a different currency or term. Tell the user crypto loan is unavailable in their region.
+
 ### Borrow confirmation card (applies to both fixed and flexible borrow)
 
 Borrowing creates a **debt liability plus a collateral lock**, and collateral can be liquidated. Mainnet borrow MUST use the Structured Operation Confirmation flow, and the card MUST show enough for the user to judge the risk — not just the amount. Include:
@@ -119,6 +121,7 @@ Server-side guard, not a substitute for the card: `148009` means the LTV would e
 > **Place Borrow `term`**: `7|14|30|60|90|180` (days). `autoRepay`: `0` manual, `1` auto-repay. `repayType`: `1` normal repay. `strategyType`: `PARTIAL` allow partial fill (default) | `FULL` full fill only. `collateralList` is a non-empty array of `{currency, amount}`. Check Borrow Order Quote for available rates first.
 > **Available Inventory `term`**: `7|14|30|90|180` (days); `annualRate` decimal (e.g. `0.02` = 2%). Returns lending-pool `availableInventory` = min(market available + financial trial, user remaining borrow limit).
 > **Error `148048`**: "The collateral amount has exceeded the platform limit" — applies to borrow, renew, and adjust-LTV operations.
+> **Error `148049`**: "This service is not available in your region" — applies to Place Borrow and Place Supply. See the region-restriction note in the Common section.
 
 ### Crypto Loan — Flexible (authentication required)
 
@@ -152,7 +155,7 @@ POST /v5/crypto-loan-flexible/borrow
 
 ⚠️ **`retMsg` for these codes is a SCREAMING_SNAKE identifier, not prose** — e.g. `148001` → `TOKEN_NOT_SUPPORT_FLEXIBLE_LOAN`, `148002` → `LOAN_QUANTITY_NOT_ALLOWED`, `10001` → `ILLEGAL_PARAMETER` (verified on testnet). Branch on `retCode`, never on `retMsg` text. Also note the checks short-circuit: an invalid `loanAmount` is rejected before the collateral is looked at, so a `148002` does not mean the rest of the body was accepted.
 
-Error codes: `148001` currency not supported for flexible loan · `148002` amount below minimum · `148003` amount exceeds precision · `148004` collateral currency not supported · `148005` collateral amount exceeds precision · `148009` LTV exceeds threshold · `148010` insufficient user quota · `148011` insufficient lending pool balance · `148012` insufficient collateral amount · `148013` non-borrowing users cannot operate · `148014` currency not supported · `148020` insufficient platform quota · `148021` operation conflict · `148031` operation not allowed during liquidation · `148048` collateral amount exceeded platform limit (transfer in other supported assets as collateral) · `100109` copy-trading users cannot use crypto loan · `10006` rate limit exceeded · `10016` server error.
+Error codes: `148001` currency not supported for flexible loan · `148002` amount below minimum · `148003` amount exceeds precision · `148004` collateral currency not supported · `148005` collateral amount exceeds precision · `148009` LTV exceeds threshold · `148010` insufficient user quota · `148011` insufficient lending pool balance · `148012` insufficient collateral amount · `148013` non-borrowing users cannot operate · `148014` currency not supported · `148020` insufficient platform quota · `148021` operation conflict · `148031` operation not allowed during liquidation · `148048` collateral amount exceeded platform limit (transfer in other supported assets as collateral) · `148049` service not available in your region (regulatory restriction — do not retry) · `100109` copy-trading users cannot use crypto loan · `10006` rate limit exceeded · `10016` server error.
 
 ---
 

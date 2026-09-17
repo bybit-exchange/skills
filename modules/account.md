@@ -323,7 +323,19 @@ Guide the user to enable the corresponding permission in App settings.
 
 ### Wallet Balance (`/v5/account/wallet-balance`)
 - Response coin-level field `colRes` (platform-level collateral restriction): `-1` not applicable, `0` normal, `1` restricted (reaching platform limit), `2` fully restricted (at platform limit).
-- Error `182011` on Set Collateral Switch: "The {coins} collateral amount has reached the platform limit."
+
+### Set Collateral (`/v5/account/set-collateral-switch`) & Batch Set Collateral (`/v5/account/set-collateral-switch-batch`)
+- Error `182011`: "The {coins} collateral amount has reached the platform limit." Enable collateral for another asset, or transfer another supported asset in as collateral.
+- Error `182012`: collateral services are currently unavailable in the user's region due to regulatory requirements. This is a **region restriction, not a parameter problem** — do not retry with different params, and tell the user the service is unavailable in their region.
+
+### Sub-account List (full) (`/v5/user/submembers`)
+- Cursor pagination: `pageSize` default and max are both `100` (auto-set to 100 if omitted or ≤ 0; error if > 100). First request: omit `nextCursor` or pass `0`.
+- **⚠️ Decide whether to keep paging by `nextCursor` only — never by the length of `subMembers`.** `nextCursor` is computed from the record count fetched from the database *before* the type=4 tag filter is applied, so a page can come back with fewer than `pageSize` entries, or even an **empty `subMembers` array**, while `nextCursor` is still non-zero. Stop only when `nextCursor == 0`. Treating an empty array as "last page" will silently truncate the sub-account list.
+- Returned types: `1` / `4` / `6` / `14` / `15` / `16` (see `memberType` in Enums). Other relationship types are excluded.
+- Type `4` (copy trading leader) is only returned when the account carries at least one of the tags `copytrade_upgrade` / `copytrade_mt5` / `UTA` / `enrolled_series_game` / `UTA_INVERSE`; otherwise it is filtered out. For type `4`, `username` may be empty (these accounts usually have no login name).
+- `accountMode` is derived from member tags, checked in order: `UTA_PRO` + `UTA_INVERSE` → `6` (UTA 2.0 Pro); `UTA_INVERSE` → `5` (UTA 2.0); `UTA_PRO` → `4` (UTA 1.0 Pro); `UTA` → `3` (UTA 1.0); `UNIFIED` → `7` (Unified); otherwise → `1` (Classic).
+- First page also includes entrust trading team sub-accounts, followed by regular sub-accounts ordered by relation ID.
+- Requires a master-account API key.
 
 ### Affiliate User Info (`/v5/user/aff-customer-info`)
 - `business` filter: `1` Derivatives, `2` Spot, `3` ByFi, `4` USDC, `5` Options.
@@ -351,5 +363,7 @@ Guide the user to enable the corresponding permission in App settings.
 - **accountType**: `UNIFIED` | `FUND` | `SPOT` | `CONTRACT` | `INVESTMENT` | `OPTION`
 - **collateralSwitch**: `ON` | `OFF`
 - **frozen** (sub account): `0` (unfreeze) | `1` (freeze)
-- **memberType** (sub account): `1` (normal) | `6` (custodial)
+- **memberType** (sub account, response field — the value set differs by endpoint):
+  - `/v5/user/submembers`: `1` (normal) | `4` (copy trading leader, only when tagged — see Endpoint Notes) | `6` (custodial) | `14` (general AI) | `15` (Bycustody) | `16` (Bybit AI)
+  - `/v5/user/query-sub-members`: `1` (normal) | `2` (demo) | `6` (custodial)
 - **repaymentType**: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`)
