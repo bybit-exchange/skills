@@ -1,0 +1,27 @@
+README.md
+  s_ac100380dc303f::t_3ff61b1220e66c 5
+SKILL.md
+  s_ac100380dc303f::t_a7087628f0ea76 5,7,30,40,274,278,368,426,448
+VERSION
+  s_ac100380dc303f::t_b40c11cfc532d5 1
+modules/account.md
+  s_ac100380dc303f::t_3a91b792fc6efd 326-338,366-368
+modules/advanced.md
+  s_ac100380dc303f::t_2d47c80934267f 76-77,124,158
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2+bf99778",
+  "base_commit_sha": "b03d30cfa5c3059ea80f1a3cc167af2551b318a5",
+  "prompts": {},
+  "sessions": {
+    "s_ac100380dc303f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "93436258-9649-4909-b857-5515c0af2623",
+        "model": "claude-opus-5"
+      },
+      "human_author": "johnny.wang <johnny.wang@bybit.com>"
+    }
+  }
+}
