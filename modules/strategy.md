@@ -63,17 +63,19 @@ POST /v5/strategy/create
 
 Hide large order by showing one child at a time to prevent front-running.
 
-**Required**: category, symbol, side, size, strategyType(`iceberg`), plus ONE of subSize or orderCount
+**Required**: category, symbol, side, strategyType(`iceberg`), plus exactly ONE sizing mode: `size` with `subSize` or `orderCount`, OR `positionValue` with `subPositionValue` or `orderCount`. Never send `size` and `positionValue` together.
 
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
 | category | string | Y | `UTA_USDT`, `UTA_SPOT`, etc. |
 | symbol | string | Y | e.g. `BTCUSDT` |
 | side | string | Y | `Buy` or `Sell` |
-| size | string | Y | Total quantity in base currency |
+| size | string | Conditional | Total quantity in base currency. Required in quantity mode; mutually exclusive with positionValue |
+| positionValue | string | Conditional | Total order value. Required in value mode; mutually exclusive with size |
 | strategyType | string | Y | `iceberg` |
-| subSize | string | One of | Size of each child order. Recommended: 5%-20% of total |
-| orderCount | integer | One of | Number of child orders (min: 2). If both given, subSize takes precedence |
+| subSize | string | Conditional | Quantity of each child order in quantity mode, unless orderCount is set. Recommended: 5%-20% of total size |
+| subPositionValue | string | Conditional | Value of each child order in value mode, unless orderCount is set. Recommended: 5%-20% of total positionValue |
+| orderCount | integer | Conditional | Number of child orders [2, 200], unless the applicable child quantity/value is set. If both given, subSize or subPositionValue takes precedence |
 | limitPrice | string | N | Fixed price for all child orders. Mutually exclusive with chase params |
 | chaseDistance | string | N | Absolute offset from best bid/ask. Special: `"-1"` = hit best price (taker) |
 | chasePercentE4 | integer | N | Percentage offset in basis points (100 = 1%). Mutually exclusive with chaseDistance and limitPrice |
@@ -87,6 +89,15 @@ Hide large order by showing one child at a time to prevent front-running.
 POST /v5/strategy/create
 {"category":"UTA_USDT","symbol":"BTCUSDT","side":"Sell","size":"10","strategyType":"iceberg","subSize":"1","limitPrice":"70000","postOnly":1}
 ```
+
+For a value budget, split by child value or count (child value = `positionValue / orderCount`):
+
+```
+POST /v5/strategy/create
+{"category":"UTA_USDT","symbol":"BTCUSDT","side":"Buy","positionValue":"10000","strategyType":"iceberg","subPositionValue":"1000","chasePercentE4":100,"maxChasePrice":"26000"}
+```
+
+Each child order must meet the instrument's minimum quantity or value from `/v5/market/instruments-info`; increase `subSize` / `subPositionValue` or reduce `orderCount` if it does not. For missing splitting parameters (`10001`), use the splitting field for the selected sizing mode or `orderCount`. For insufficient balance (`110007`), reduce total `size` / `positionValue` or free up balance.
 
 ### Chase Order
 
@@ -122,21 +133,23 @@ POST /v5/strategy/create
 
 Adapts child order size to live market activity — execution rate scales with real-time volume.
 
-> ⚠️ **POV only supports Perp**: `UTA_USDT`, `UTA_USDC`, `UTA_INVERSE`. NOT `UTA_SPOT`.
+> **POV supports Perp and Spot**: `UTA_USDT`, `UTA_USDC`, `UTA_INVERSE`, `UTA_SPOT`. All three execution modes support spot. `UTA_USDC_FUTURE`, `UTA_INVERSE_FUTURE`, and `UTA_USDT_FUTURE` are reserved shared-schema values and are rejected for POV.
 
 **Required**: category, symbol, side, strategyType(`pov`), povParams
 
 | Param | Type | Required | Description |
 |-------|------|----------|-------------|
-| category | string | Y | `UTA_USDT`, `UTA_USDC`, `UTA_INVERSE` only |
+| category | string | Y | `UTA_USDT`, `UTA_USDC`, `UTA_INVERSE`, `UTA_SPOT` only |
 | symbol | string | Y | e.g. `BTCUSDT` |
 | side | string | Y | `Buy` or `Sell` |
 | strategyType | string | Y | `pov` |
-| size | string | N | Max quantity (maxQty). Required when interval>0 unless duration is set |
-| duration | integer | N | Total time in seconds. Range: [900, 86400]. Required when interval>0 unless size is set |
+| size | string | N | Max quantity in base coin (maxQty). Mutually exclusive with positionValue; see stop-condition rules below |
+| positionValue | string | N | Max total filled value (maxValue). Mutually exclusive with size; see stop-condition rules below |
+| duration | integer | N | Total time in seconds (maxDuration). Range: [900, 86400]; see stop-condition rules below |
 | interval | integer | N | Seconds between orders. 0=OneTime mode (single child order then stop). Range: 0 or [5, 3600] |
-| reduceOnly | boolean | N | Only reduce position. Default: false |
-| positionIdx | integer | N | 0=one-way, 1=hedge-long, 2=hedge-short. Default: 0 |
+| reduceOnly | boolean | N | Only reduce position. Default: false; must be false for spot |
+| positionIdx | integer | N | 0=one-way, 1=hedge-long, 2=hedge-short. Default: 0; must be 0 for spot |
+| leverageType | integer | N | 0=normal spot, 1=spot margin borrowing. Default: 0; only for UTA_SPOT |
 | povParams | object | Y | POV-specific parameters (see below) |
 
 **povParams object**:
@@ -153,13 +166,22 @@ Adapts child order size to live market activity — execution rate scales with r
 - `OppositeSideLiquidity` → Taker Limit order @BBO (childQty = opposite side depth × participationRate%)
 - `SameSideLiquidity` → Post-Only order @BBO (childQty = same side depth × participationRate%)
 
-> **interval=0 (OneTime)**: Places a single child order then stops immediately. No size/duration needed.
-> **interval>0**: At least one of `size` or `duration` must be set as a stop condition.
+> **interval=0 (OneTime)**: Places a single child order then stops immediately. `size`, `positionValue`, and `duration` are ignored; omit them.
+> **interval>0**: At least one of `size`, `positionValue`, or `duration` must be set as a stop condition. `size` and `positionValue` are mutually exclusive; either can be combined with `duration`. Stop when any condition is met.
 
 ```
 POST /v5/strategy/create
 {"category":"UTA_USDT","symbol":"BTCUSDT","side":"Buy","strategyType":"pov","size":"10","duration":3600,"interval":30,"povParams":{"mode":"TradedVolume","participationRate":"5","referenceWindow":"300"}}
 ```
+
+Spot value budget with maker-only child orders:
+
+```
+POST /v5/strategy/create
+{"category":"UTA_SPOT","symbol":"BTCUSDT","side":"Buy","strategyType":"pov","positionValue":"10000","interval":30,"leverageType":0,"positionIdx":0,"reduceOnly":false,"povParams":{"mode":"SameSideLiquidity","participationRate":"10.0","depthReference":3}}
+```
+
+Use `leverageType=1` only when spot margin borrowing is intended. For insufficient balance (`110007`), reduce `size` / `positionValue` or free up balance.
 
 ---
 
@@ -196,10 +218,11 @@ POST /v5/strategy/create
 | 18 | Beyond maxChasePrice |
 | 24 | TWAP hit limit price |
 | 27 | POV maxDuration reached |
-| 28 | POV maxQty reached |
+| 28 | POV maxQty or maxValue reached |
 | 29 | POV trading failed 6 consecutive times |
 | 30 | POV OneTime mode executed |
-| 31 | POV no fills in 24 hours |
+| 31 | POV maxQty/maxValue mode: no fills in 24 hours |
+| 32 | Order book empty: cannot convert value to quantity |
 
 ### Order Status (for order-list)
 
@@ -234,6 +257,8 @@ Strategy endpoints use the **standard V5 response format** (`retCode`/`retMsg`):
 
 > **Note**: All strategy endpoints (create, list, stop) use standard `retCode`/`retMsg` (camelCase). The `result` object contains `strategyId` (UUID) and a nested `result: null`.
 
+Strategy list entries include `size` (total quantity; POV: maxQty) and `positionValue` (total value; POV: maxValue). `positionValue` is empty for quantity-based strategies.
+
 ---
 
 ## POV Error Codes
@@ -243,7 +268,7 @@ Strategy endpoints use the **standard V5 response format** (`retCode`/`retMsg`):
 | 60088 | Invalid mode |
 | 60089 | participationRate out of range [1,100] or more than 1 decimal place |
 | 60090 | referenceWindow or depthReference missing or invalid for selected mode |
-| 60091 | Missing stop condition (size or duration) when interval>0 |
+| 60091 | Missing stop condition (size, positionValue, or duration) when interval>0; do not send size and positionValue together |
 | 60092 | Estimated child qty out of [minQty, maxOrderQty] |
 | 60093 | duration out of range [900, 86400] |
 | 60094 | Estimated child qty exceeds maxQty |
@@ -257,9 +282,9 @@ Strategy endpoints use the **standard V5 response format** (`retCode`/`retMsg`):
 - Only `Running` (2) or `Untriggered` (6) strategies can be stopped
 - **⚠️ Stopping a strategy is PERMANENT and irreversible — it cannot be resumed**
 - TWAP: duration must be divisible by interval; min duration 300s
-- Iceberg: requires ONE of subSize or orderCount; subSize must be < total size
+- Iceberg: choose size + (subSize or orderCount), OR positionValue + (subPositionValue or orderCount); orderCount is [2, 200]; subSize must be < total size
 - Chase: strategyType is `chaseOrder` (camelCase, NOT `chase`); generates frequent order cancellations/replacements (watch rate limits)
 - Chase: many cancelled orders (status=4) is NORMAL behavior -- it cancels and replaces to track price
 - chasePercentE4 and chaseDistance are mutually exclusive across all strategy types
-- POV: only supports Perp (UTA_USDT/UTA_USDC/UTA_INVERSE), NOT spot; interval=0 is OneTime mode
+- POV: supports Perp (UTA_USDT/UTA_USDC/UTA_INVERSE) and spot (UTA_SPOT); interval=0 is OneTime mode; size and positionValue are mutually exclusive
 - All size/price params are strings; duration/interval/chasePercentE4/orderCount/depthReference are integers
