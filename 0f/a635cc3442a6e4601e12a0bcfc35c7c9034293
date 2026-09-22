@@ -1,0 +1,27 @@
+README.md
+  s_26a4978bd5b468::t_0eb314e3798b44 5
+SKILL.md
+  s_26a4978bd5b468::t_3a485a4bab79a8 5,7,30,40,274,278,318,368,426,448
+VERSION
+  s_26a4978bd5b468::t_d4132bdafb9d90 1
+modules/market.md
+  s_26a4978bd5b468::t_a8d7aaeadd7a2e 31-37,51,72-80
+modules/strategy.md
+  s_26a4978bd5b468::t_75e7048e47e8ed 66,73-74,76-78,93-101,136,142,146-148,150-152,169-170,177-185,221,224-225,260-261,271,285,289
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2+bf99778",
+  "base_commit_sha": "0fa635cc3442a6e4601e12a0bcfc35c7c9034293",
+  "prompts": {},
+  "sessions": {
+    "s_26a4978bd5b468": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0c830-8006-7a83-848f-fcdd448e2479",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "johnny.wang <johnny.wang@bybit.com>"
+    }
+  }
+}
