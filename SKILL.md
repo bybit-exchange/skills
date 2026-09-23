@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.7.2  # Modular Architecture + Security Baseline
+  version: 1.7.3  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-09-17
+  updated: 2026-09-22
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ FOREGROUND (main agent — immediate):
 BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
 2. SKILL_DIR = directory where this SKILL.md is located
-3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.2" https://api.bybit.com/skill/manifest
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.3" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
@@ -37,7 +37,7 @@ BACKGROUND (sub-agent — parallel):
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
    a. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/1.7.2" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.7.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
@@ -271,11 +271,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.2" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.3" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/1.7.2" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.7.3" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -315,7 +315,7 @@ Tell the user what they can do. Examples:
 - **Spot ↔ Convert fallback**: Spot order endpoints (`/v5/order/create`) only support listed spot pairs (base + quote where quote ∈ `USDT`/`USDC`/`USDE`/`BTC`/`ETH`/`EUR`/`BRL`). If the user names a base-base pair (e.g., `BTCDOGE`, `ETHSOL`, `SOLPEPE`) or any pair you cannot confirm is a listed spot symbol, **do NOT call spot order create**. Route to Convert via the `/v5/asset/exchange/*` endpoints in the account module: (1) `query-coin-list` to confirm both coins are convertible, (2) `quote-apply` to lock a quote, (3) user `CONFIRM`, (4) `convert-execute` before the quote expires (typically ~5s). When suggesting this fallback, tell the user that the pair is not a listed spot symbol and propose Convert instead — surface `fromCoin`, `toCoin`, `requestAmount`, quote price, and `expireTime` in the confirmation.
 - **Trading Bot**: Bot API uses `status_code`/`debug_msg` response format (NOT `retCode`/`retMsg`). **Always call `validate-input` (spot grid) or `validate` (futures grid) before creation** — this returns acceptable parameter ranges and catches errors early. DCA: max **5 trading pairs** per bot; if user requests more, ask them to choose up to 5.
 - **Alpha Trade**: Uses a **quote-then-execute** model — always call `/v5/alpha/trade/quote` first. Token codes use `CEX_<id>` (payment tokens like USDT) and `DEX_<id>` (on-chain tokens). All endpoints are POST (including queries). Settlement is on-chain (10-60s). KYC required.
-- **Strategy**: Strategy API uses `UTA_*` category format ONLY. Do NOT use `linear`/`spot` — map: `linear` → `UTA_USDT`, `spot` → `UTA_SPOT`, `inverse` → `UTA_INVERSE`. Chase orders: `chaseDistance` and `chasePercentE4` are **mutually exclusive** — use ONE only. **NEVER use `category=linear` or `category=spot` in Strategy API calls** — this will cause errors. Always translate: derivatives/perpetual/futures → `UTA_USDT`, spot → `UTA_SPOT`. **POV** (Percentage of Volume): adapts child order size to live market activity; only supports Perp (NOT spot).
+- **Strategy**: Strategy API uses `UTA_*` category format ONLY. Do NOT use `linear`/`spot` — map: `linear` → `UTA_USDT`, `spot` → `UTA_SPOT`, `inverse` → `UTA_INVERSE`. Chase orders: `chaseDistance` and `chasePercentE4` are **mutually exclusive** — use ONE only. **NEVER use `category=linear` or `category=spot` in Strategy API calls** — this will cause errors. Always translate: derivatives/perpetual/futures → `UTA_USDT`, spot → `UTA_SPOT`. **POV** (Percentage of Volume): adapts child order size to live market activity; supports Perp (`UTA_USDT`/`UTA_USDC`/`UTA_INVERSE`) and Spot (`UTA_SPOT`). Iceberg and POV support quantity (`size`) or value (`positionValue`) sizing; never send both together. See `modules/strategy.md` for splitting and stop-condition rules.
 - **Copy Trading**: The `investmentE8` parameter uses **8-decimal precision** (multiply USDT amount by 10^8). For example, 100 USDT = `10000000000` (100 × 10^8). Always apply this conversion when the user specifies an investment amount in USDT.
 - **TradFi**: Discover instruments via `instruments-info` with `symbolType=xstocks` (spot, e.g., `TSLAXUSDT`) or `symbolType=commodity` (linear, e.g., `XAUUSDT`/`CLUSDT`). Trading reuses standard V5 order endpoints — no TradFi-specific trade API. **Metals (XAU/XAG) and Crude Oil (CL) require a one-time master-account agreement** via `POST /v5/user/agreement` (`categoryV2=2` metals, `categoryV2=3` oil); xStocks do not. Subaccounts inherit eligibility once the master signs. xStocks instruments include extra fields such as `xstockMultiplier`.
 - **OAuth**: When triggered, load `modules/oauth.md` and follow the OAuth Authorization Flow documented there. After authorization completes, credentials are automatically available for all other modules (spot, derivatives, etc.) via the Runtime Decision logic in Step 3.
@@ -365,7 +365,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `X-BAPI-SIGN-TYPE` | `2` for RSA-SHA256; omit or set `1` for HMAC-SHA256 |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.7.2` |
+| `User-Agent` | `bybit-skill/1.7.3` |
 | `X-Referer` | `bybit-skill` |
 
 ### Signing Algorithm
@@ -423,7 +423,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.7.2" \
+  -H "User-Agent: bybit-skill/1.7.3" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -445,7 +445,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.7.2" \
+  -H "User-Agent: bybit-skill/1.7.3" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```

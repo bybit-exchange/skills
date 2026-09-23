@@ -28,6 +28,13 @@ GET /v5/market/funding/history?category=linear&symbol=BTCUSDT&limit=10
 GET /v5/market/orderbook?category=linear&symbol=BTCUSDT&limit=50
 ```
 
+**Discover option underlyings**
+```
+GET /v5/market/option-base-coins
+GET /v5/market/option-base-coins?underlyingType=2
+```
+Use the returned base coins instead of a hard-coded list. Check `hasSymbol=1` before querying `/v5/market/instruments-info?category=option&baseCoin=<baseCoin>`.
+
 > Market data endpoints require no authentication and can be called directly.
 
 ---
@@ -41,6 +48,7 @@ GET /v5/market/orderbook?category=linear&symbol=BTCUSDT&limit=50
 | Index Price Kline | `/v5/market/index-price-kline` | GET | category, symbol, interval | start, end, limit | linear, inverse |
 | Premium Index Kline | `/v5/market/premium-index-price-kline` | GET | category, symbol, interval | start, end, limit | linear |
 | Instruments Info | `/v5/market/instruments-info` | GET | category | symbol, baseCoin, limit, cursor, status | spot, linear, inverse, option |
+| Option Base Coins | `/v5/market/option-base-coins` | GET | — | underlyingType | option |
 | Orderbook | `/v5/market/orderbook` | GET | category, symbol | limit | spot, linear, inverse, option |
 | Tickers | `/v5/market/tickers` | GET | category | symbol, baseCoin, expDate | spot, linear, inverse, option |
 | Funding Rate History | `/v5/market/funding/history` | GET | category, symbol | startTime, endTime, limit | linear, inverse |
@@ -60,6 +68,15 @@ GET /v5/market/orderbook?category=linear&symbol=BTCUSDT&limit=50
 | Server Time | `/v5/market/time` | GET | — | — | — |
 | System Status | `/v5/system/status` | GET | — | id, state | — |
 | Announcements | `/v5/announcements/index` | GET | — | locale, type, tag, page, limit | — |
+
+## Endpoint Notes
+
+### Option Base Coins (`/v5/market/option-base-coins`)
+
+- `underlyingType` is the only supported query parameter: integer `0` (crypto), `1` (commodity), `2` (stock), `3` (forex), or `4` (oil). Omit it to discover all available option base coins; do not send `category`.
+- `result.list` contains `baseCoin`, `quoteCoin`, `settleCoin`, `optionShowName`, `optionOnlineTime` (milliseconds), `hasSymbol`, and `underlyingType`.
+- `hasSymbol`: `0` means no tradable option symbols, `1` means tradable symbols exist. It is `0` when `optionOnlineTime` is `0` or is still in the future.
+- Errors: `10001` means invalid parameters (check `underlyingType`); `10006` means rate limited (reduce request frequency and retry after a short delay).
 
 ## Enums
 
