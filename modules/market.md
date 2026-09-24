@@ -71,6 +71,10 @@ Use the returned base coins instead of a hard-coded list. Check `hasSymbol=1` be
 
 ## Endpoint Notes
 
+### Instruments Info (`/v5/market/instruments-info`)
+
+- For `category=linear` or `inverse`, each instrument in `result.list` includes `tags`: `["ST"]` when the symbol has the ST tag, otherwise `[]`. This is a response field, not a request filter; do not assume it is available for spot or option instruments.
+
 ### Option Base Coins (`/v5/market/option-base-coins`)
 
 - `underlyingType` is the only supported query parameter: integer `0` (crypto), `1` (commodity), `2` (stock), `3` (forex), or `4` (oil). Omit it to discover all available option base coins; do not send `category`.
