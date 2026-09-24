@@ -1,0 +1,29 @@
+.claude-plugin/plugin.json
+  s_4912946baa37be::t_406cf0274d89bc 5
+README.md
+  s_4912946baa37be::t_4ef73740eb8c41 5
+SKILL.md
+  s_4912946baa37be::t_4a275492f5c8d3 5,7,30,40,274,278,298,326,368,426,448
+VERSION
+  s_4912946baa37be::t_d12cb731a0a606 1
+modules/account.md
+  s_4912946baa37be::t_06d08d789edaab 54-67,222-228,231-249
+modules/market.md
+  s_4912946baa37be::t_3c0af6b31beb51 74-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "a734019e127b5b818e076607d34826b2f6719757",
+  "prompts": {},
+  "sessions": {
+    "s_4912946baa37be": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0d20d-406e-74e1-8023-65e20d5c39dd",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "paul.yang <paul.yang@bybit.com>"
+    }
+  }
+}
