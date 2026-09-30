@@ -294,7 +294,7 @@ Tell the user what they can do. Examples:
 | price, ticker, kline, chart, orderbook, depth, funding rate, open interest, market data | **market** | `modules/market.md` | — |
 | buy, sell, spot, swap, exchange, convert, limit order, market order, cancel order, spot margin | **spot** | `modules/spot.md` | account |
 | long, short, leverage, futures, perpetual, close position, take profit, stop loss, trailing stop, conditional order, hedge mode, option, put, call, strike, expiry | **derivatives** | `modules/derivatives.md` | account |
-| earn, stake, redeem, yield, savings, flexible, fixed deposit, fixed term, fund pool, dual assets, structured product, discount buy, smart leverage, double win, liquidity mining, auto reinvest, early redeem, hold-to-earn, airdrop yield, PWM, private wealth, investment plan, fund management, asset manager | **earn** | `modules/earn.md` | account |
+| earn, stake, redeem, yield, savings, flexible, flexible auto savings, auto savings, auto-savings, fixed deposit, fixed term, fund pool, dual assets, structured product, discount buy, smart leverage, double win, liquidity mining, auto reinvest, early redeem, hold-to-earn, airdrop yield, PWM, private wealth, investment plan, fund management, asset manager | **earn** | `modules/earn.md` | account |
 | balance, wallet, transfer, deposit, withdraw, fee, sub-account, API key, asset, fixed-rate borrow, borrow liability, repayment type, renew borrow, borrow market, borrow order, borrow contract, fixed borrow, margin borrow, referral, referral code, invitation code, invite link, affiliate, tax report, batch tax export, tax report status | **account** | `modules/account.md` | — |
 | websocket, stream, loan, borrow, repay, RFQ, block trade, spread, lending, broker, rate limit | **advanced** | `modules/advanced.md` | — |
 | P2P, peer to peer, advertisement, ad, OTC, fiat, fiat buy, fiat sell, convert fiat | **fiat** | `modules/fiat.md` | — |
@@ -323,7 +323,7 @@ Tell the user what they can do. Examples:
 ### Routing Notes
 
 - Keywords are **hints, not strict rules** — always use semantic understanding of the user's full request to determine the correct module(s). When ambiguous (e.g., "borrow" could mean spot margin or advanced lending), prefer the module matching the broader conversation context, or ask the user to clarify.
-- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富 → earn, 余额/转账/充值/提币/税务报表/批量税务导出/税务报表进度 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐/组合机器人/调仓机器人/股票组合/大宗商品组合/传统金融机器人 → trading-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 买入代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 打新/新币挖矿/launchpool/拼图/代币空投/活动列表/质押活动 → activity, 授权/登录/连接Bybit/OAuth → oauth
+- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富/自动储蓄/灵活储蓄自动储蓄 → earn, 余额/转账/充值/提币/税务报表/批量税务导出/税务报表进度 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐/组合机器人/调仓机器人/股票组合/大宗商品组合/传统金融机器人 → trading-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 买入代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 打新/新币挖矿/launchpool/拼图/代币空投/活动列表/质押活动 → activity, 授权/登录/连接Bybit/OAuth → oauth
 
 ### Loading Rules
 
