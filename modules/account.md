@@ -51,6 +51,21 @@ POST /v5/account/repay
 
 ---
 
+## Scenario: Export Batch Tax Reports
+
+User might say: "Export my trading and earn tax reports", "Download all my tax reports for the last year", "Check my tax report batch".
+
+1. Confirm the requested date range and report categories. Use Unix timestamps in **seconds**; the start must be within the latest **18 months**, and the interval must not exceed **12 months**.
+2. Submit `POST /v5/fht/compliance/tax/private/batch_create`. `items` must contain **1–50** entries by default (the limit is configurable); each entry has string `type` and `number` fields. `type=ALL` expands to all export pairs mapped for the current site; its `number` field is required but ignored (send an empty string), and other submitted entries are ignored. `number=ALL` is invalid unless `type=ALL`.
+3. Duplicate `type`/`number` pairs are de-duplicated case-insensitively. Expansion is limited to **500** entries by default (configurable). Only an unfinished `ALL` batch blocks another `ALL` batch for the same user; ordinary batches may run concurrently.
+4. The API returns after writing the batch and child records locally with pending status. Downstream big-data export requests run asynchronously. Save `result.batchId`; do not report the export as complete until all children reach terminal status.
+5. Poll `GET /v5/fht/compliance/tax/private/batch_query?batchId=<batchId>` every **30 seconds**, using the same authenticated user. Inspect every child in `result.items`: `0` pending, `1` generating, `2` succeeded, `-1` failed. Report partial failures instead of treating a successful HTTP response as a completed batch.
+6. A successful child's `url` is a JSON-encoded string containing `Files` and `Basepath`, matching the legacy URL endpoint; parse it as download information rather than treating the string as a direct URL. `queryId` is assigned when the child is created and may already be present while its status is `0`.
+
+Creating a batch requires **Exchange History read-write permission** and starts an asynchronous export task. Follow the skill's write-operation confirmation rules. Querying a batch is read-only and uses Exchange History read permission. The create endpoint is rate-limited to **5/s per UID + Path**; query is **20/s per UID + Path**.
+
+---
+
 ## Insufficient Balance — Transfer Guide
 
 When an operation fails due to insufficient balance, assist the user by checking if funds are available elsewhere.
@@ -205,11 +220,34 @@ Guide the user to enable the corresponding permission in App settings.
 | Query Referral Code | `/v5/user/invitation/code` | GET | — | — | — |
 | Sign Agreement | `/v5/user/agreement` | POST | agree, category | — | — |
 
+### Batch Tax Reports (authentication required)
+
+| Endpoint | Path | Method | Required Params | Optional Params | Categories |
+|----------|------|--------|----------------|-----------------|------------|
+| Batch Create Tax Reports | `/v5/fht/compliance/tax/private/batch_create` | POST | startTime, endTime, items | sourceInstitution, exportFileType | — |
+| Batch Query Tax Reports | `/v5/fht/compliance/tax/private/batch_query` | GET | batchId | — | — |
+
 ## Endpoint Notes
 
 ### Account Instruments Info (`/v5/account/instruments-info`)
 
 - For `category=linear` or `inverse`, each instrument in `result.list` includes `tags`: `["ST"]` when the symbol has the ST tag, otherwise `[]`. This is a response field, not a request filter; do not assume it is available for spot or option instruments.
+
+### Batch Create Tax Reports (`/v5/fht/compliance/tax/private/batch_create`)
+
+- `startTime` and `endTime` are Unix timestamps in **seconds**. The start must be within the latest **18 months**, and the interval must not exceed **12 months**.
+- `items` accepts 1–50 entries by default (configurable), with an expanded limit of 500 by default (configurable). Each item contains string `type` and `number`. Categories such as `TRADE`, `EARN`, and `DEPOSIT&WITHDRAWAL` are examples, not an exhaustive enum.
+- If any submitted item has `type=ALL`, expand all export pairs mapped for the current site and ignore the other submitted items. Its required `number` value is ignored (send an empty string); `number=ALL` is invalid unless `type=ALL`. De-duplicate repeated type/number pairs case-insensitively.
+- `exportFileType`: `csv|orc` (default `orc`). Use `csv` when requested. `sourceInstitution` is an optional source institution identifier.
+- Returns `result.batchId` after the batch and child records are written locally with pending status; downstream big-data requests run asynchronously. Ordinary batches may run concurrently; only an unfinished `ALL` batch is mutually exclusive for the same user.
+- Rate limit: **5/s per UID + Path**. Error `10001` covers invalid timestamps/range, empty or oversized item lists, invalid type/number pairs, or no site-mapped export pairs; `10007` unauthenticated user; `400004` an unfinished `ALL` batch already exists; `20001` database write failure. Check `retCode`, not just HTTP status.
+
+### Batch Query Tax Reports (`/v5/fht/compliance/tax/private/batch_query`)
+
+- `batchId` is required, must be non-empty, and must belong to the authenticated user. Rate limit: **20/s per UID + Path**; recommended polling interval: **30 seconds**.
+- Returns `result.items[]` with `type`, `number`, `status`, `url`, and `queryId`. Child status: `-1` failed, `0` pending, `1` generating, `2` succeeded. `queryId` is generated when the child task is created and can be present at status `0`.
+- `url` is populated only at status `2`; it is a JSON-encoded string containing `Files` (file path list) and `Basepath` (S3 base URL), matching the legacy URL endpoint. Otherwise it is an empty string.
+- Errors: `10001` empty `batchId`; `10007` unauthenticated user; `20000` batch not found for this user; `20001` database query failure. Check `retCode`.
 
 ### Asset Overview (`/v5/asset/asset-overview`)
 - Parameters updated: `category` and `coin` replaced by `accountType`, `memberId`, and `valuationCurrency`.
