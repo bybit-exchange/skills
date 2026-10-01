@@ -5,7 +5,7 @@
 ## Table of Contents
 
 1. [All Positions Overview](#scenario-all-positions-overview) — Complete earn position snapshot
-2. [Earn Products](#scenario-earn-products) — FlexibleSaving & OnChain
+2. [Earn Products](#scenario-earn-products) — FlexibleSaving, Auto Savings & OnChain
 3. [Fixed Term](#scenario-fixed-term) — FixedTermSaving / FundPool / FundPoolPremium
 4. [Advance Earn](#scenario-advance-earn) — Dual Assets / Smart Leverage / DoubleWin / Discount Buy
 5. [Liquidity Mining](#scenario-liquidity-mining) — Pool liquidity provision
@@ -66,7 +66,7 @@ User might say: "check all my earn positions", "show all earn", "earn overview",
 
 ## Scenario: Earn Products
 
-User might say: "Show me available earn products", "Deposit USDT", "Redeem", "auto reinvest my OnChain position", "APR history"
+User might say: "Show me available earn products", "Deposit USDT", "Redeem", "auto reinvest my OnChain position", "APR history", "check my flexible auto savings settings", "enable BTC auto savings"
 
 ```
 GET  /v5/earn/product?category=FlexibleSaving&coin=USDT
@@ -101,6 +101,30 @@ GET  /v5/earn/hourly-yield?category=FlexibleSaving
 > ⚠️ **Two different auto-reinvest toggles exist — pick by product category.** This one (`/v5/earn/position/modify`, integer `autoReinvest`: `0`|`1`) is for fixed-term **OnChain** positions. For **FundPool** fixed-term positions use `/v5/earn/fixed-term/position/auto-invest` instead (string `status`: `Enable`|`Disable`) — see *Scenario: Fixed Term*. If the user just says "turn on auto reinvest", determine the position's category first (`/v5/earn/position` or `/v5/earn/fixed-term/position`) rather than guessing an endpoint.
 
 > **Coupons** (`/v5/earn/coupons`, category: `FlexibleSaving`|`DualAssets`): returns user's `interestCards` (interest-rate coupons) and `awardCards` (Dual Assets reward cards / trial funds). Card status: `InUse`|`NotUse`|`Expired`|`AlreadyUsed`. To apply when staking, pass `interestCard:{awardId, specCode}` to `/v5/earn/place-order` (FlexibleSaving Stake) or `/v5/earn/advance/place-order` (DualAssets). Rate limit: 10 req/s (UID).
+
+### Flexible Saving Auto Savings
+
+Use these settings endpoints for Flexible Saving auto savings. They are separate from fixed-term `autoReinvest` / `autoInvest` controls above.
+
+**Check settings and current APR**
+```
+GET /v5/earn/flexible-saving/auto-savings?coins=BTC&coins=ETH
+```
+
+**Enable auto savings for BTC without an immediate subscription**
+```
+POST /v5/earn/flexible-saving/auto-savings
+{"coin":"BTC","isSelected":true,"purchaseImmediately":false}
+```
+
+| Endpoint | Method | Permission | Rate limit | Required | Optional |
+|----------|--------|------------|------------|----------|----------|
+| Auto Savings Settings | GET | Earn read | 10/s per UID | — | coins (up to 50) |
+| Edit Auto Savings Settings | POST | Earn write | 5/s per UID | isSelected | coin, purchaseImmediately |
+
+- GET accepts repeated `coins` query parameters (for example `coins=BTC&coins=ETH`), up to 50 coin names. Omit `coins` to return all supported coins. The result includes `selectedAll` and per-coin `coin`, `isSelected`, `maxStakingAmount`, and `apr` fields. Amount and APR values are decimal strings; `apr="0.05"` means **5%**, not an E8 value.
+- POST updates one coin when `coin` is provided, or the global setting when `coin` is omitted or empty. `isSelected` is required. `purchaseImmediately` defaults to `false`; when enabling, `true` asynchronously attempts to subscribe the available Funding Account balance. When disabling, this parameter is ignored.
+- This POST changes account settings and must follow the Structured Operation Confirmation flow. Only set `purchaseImmediately=true` after the user confirms the immediate subscription attempt; a successful response means the setting request succeeded, not that the asynchronous subscription has completed. Check `retCode` for business success.
 
 ---
 
