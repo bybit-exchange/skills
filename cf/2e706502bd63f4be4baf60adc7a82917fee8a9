@@ -1,0 +1,27 @@
+.claude-plugin/plugin.json
+  s_5aa7df547e1aba::t_4ac49a89cec0ed 5
+README.md
+  s_5aa7df547e1aba::t_4d2e09775b8d28 5
+SKILL.md
+  s_5aa7df547e1aba::t_322824a0c53528 5,7,30,40,274,278,368,426,448
+VERSION
+  s_5aa7df547e1aba::t_1d31ae61f6bdf7 1
+modules/trading-bot.md
+  s_5aa7df547e1aba::t_2218d74a9b516d 353,355,357-360,372,888-890
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "cf2e706502bd63f4be4baf60adc7a82917fee8a9",
+  "prompts": {},
+  "sessions": {
+    "s_5aa7df547e1aba": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a0facc-591e-7b13-8189-1aa6b4ca7c0a",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "paul.yang <paul.yang@bybit.com>"
+    }
+  }
+}
