@@ -350,53 +350,14 @@ Suggested monitoring:
 
 ## Query Bot Status
 
-**Trigger:** "status", "profit", "how is it doing", "bot status", "check my bot", "list my bots", "what bots do I have"
+**Trigger:** "status", "profit", "how is it doing", "bot status", "check my bot"
 
-### List All Bots
+### Bot List
 
-When the user does not specify a bot ID, or wants to see all running bots:
-
-```
-POST /v5/botsummary/list-all-bots
-Body: { "status": 0, "page": 0, "limit": 50 }
-```
-
-`status`: `0` = running · `1` = closed (rarely needed — omit unless user explicitly asks for history)
-
-To filter by bot type, add `"type"` to the request body:
-
-| type value | Bot type |
-|-----------|----------|
-| `BOT_TYPE_ENUM_GRID_SPOT` | Spot Grid |
-| `BOT_TYPE_ENUM_GRID_FUTURES` | Futures Grid |
-| `BOT_TYPE_ENUM_MART_FUTURES` | Futures Martingale |
-| `BOT_TYPE_ENUM_COMBO_FUTURES` | Futures Combo |
-| `BOT_TYPE_ENUM_DCA_SPOT` | DCA |
-
-Response: `result.bots[]` — each item has `type` + a nested object matching the bot type:
-
-| Bot | Nested key | Status field | Profit field |
-|-----|-----------|-------------|-------------|
-| Spot Grid | `grid` | `grid.info.status` (e.g. `GRID_STATUS_RUNNING`) | `grid.profit.total_profit` / `grid.profit.arbitrage_num` |
-| Futures Grid | `future_grid` | `future_grid.status` | `future_grid.pnl` / `future_grid.arbitrage_num` |
-| Futures Martingale | `fmart` | `fmart.bot_display_status` | `fmart.total_profit` / `fmart.total_profit_per` |
-| Futures Combo | `fcombo` | `fcombo.bot_display_status` | `fcombo.total_pnl` / `fcombo.total_pnl_per` |
-| DCA | `dca` | `dca.status` (e.g. `DCA_BOT_STATUS_RUNNING`) | `dca.total_profit` / `dca.pnl_percentage` |
-
-`result.total` = total count (string).
-
-**Normal users have few bots — no need to paginate.** Use `limit: 50` and display all results directly. If `total > 50`, inform the user and offer to fetch more.
-
-Output format when listing:
-```
-You have X running bots:
-
-① HYPE/USDT Futures Grid Long | BOT-XXXXXX
-   Running 21h · Profit +0.73% (+$0.73) · 124 fills
-
-② TSLA/USDT Futures Martingale Long | BOT-XXXXXX
-   Running 53 days · Profit +286.6% (+$286.6)
-```
+The public V5 API does not provide an aggregate bot-list endpoint. If the user
+asks to list all bots or does not provide a bot ID, direct them to the Bybit
+web/app Trading Bot page. Do not call undocumented APIs or report status or
+P&L until a specific bot ID is available.
 
 ### Single Bot Detail
 
@@ -408,7 +369,7 @@ When the user specifies a bot or wants full details:
 | Futures Grid | `POST /v5/fgridbot/detail` | `{ "bot_id": <id> }` |
 | Futures Martingale | `POST /v5/fmartingalebot/detail` | `{ "bot_id": <id> }` |
 | Futures Combo | `POST /v5/fcombobot/detail` | `{ "bot_id": <id> }` |
-| DCA | ⚠️ No detail endpoint in OpenAPI | Use `list-all-bots` to check running status |
+| DCA | ⚠️ No public detail endpoint documented | Direct the user to the Bybit Trading Bot page |
 
 Response structures:
 
@@ -924,7 +885,9 @@ Quote token is **always USDT** for TradFi Combo. Otherwise follow **Beginner Flo
 
 ### Query Status
 
-**In `list-all-bots`:** type filter `BOT_TYPE_ENUM_COMBO_MT5`; response object key `mt5_combo`; status at `mt5_combo.bot_display_status`; P&L at `mt5_combo.total_pnl` / `mt5_combo.total_pnl_per`.
+With a known bot ID, use `get-detail` below and judge state by
+`bot_display_status`. If the user has no bot ID, direct them to the Bybit
+Trading Bot page instead of using an undocumented aggregate list.
 
 **Detail:**
 
@@ -1129,8 +1092,6 @@ POST /v5/mt5combobot/get-positions  Body: { "bot_id": <id> }
 * **`adjust_position_mode`**: `ADJUST_POSITION_MODE_PERCENT` | `ADJUST_POSITION_MODE_TIME` | `ADJUST_POSITION_MODE_TIME_OR_PERCENT`
 * **`bot_display_status`**: `BOT_DISPLAY_STATUS_RUNNING` | `BOT_DISPLAY_STATUS_AWAIT_ACTIVATION` | `BOT_DISPLAY_STATUS_COMPLETED`
 * **`bot_mode`**: `BOT_MODE_LONG` | `BOT_MODE_SHORT` | `BOT_MODE_MIX`
-* **bot type (list-all-bots filter)**: `BOT_TYPE_ENUM_COMBO_MT5`
-
 ---
 
 ## Trailing Up / Trailing Down (Advanced)
