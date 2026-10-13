@@ -56,6 +56,7 @@ Spot-X campaign activities: **Launchpool** (stake coins to earn new-token reward
 
 ### Token Splash User Activity Params (`/v5/spot-x/token-splash/user/activity-params`)
 - Returns only activities the user has registered for, that are trade-task type, and that have not yet reached announcement time (rewards not yet distributed). Deposit-only tasks are excluded.
+- In `tradeTask`, `tradeRequiredAmount` and `tradedAmount` are trade values measured in the stablecoin named by `tradeUnit` (for example, `500` and `300` USDT). `tradeToken` identifies the token counted by the task (for example, BTC); for an on-chain task it is the activity token ID, and otherwise it is the configured trade token. Do not interpret `tradeUnit` as the traded token.
 - `tradeTask.estimatedRewardAmount` = `min(tradedAmount / tradeRequiredAmount, 1) × maxRewardAmount`, truncated to 4 decimals.
 
 ## Enums
