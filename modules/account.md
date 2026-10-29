@@ -43,6 +43,21 @@ POST /v5/spot-margin-trade/fixedborrow
 GET /v5/spot-margin-trade/liability?currency=USDT
 ```
 
+**Query fixed-rate borrow penalty interest (read-only)**
+```
+GET /v5/spot-margin-trade/fixedborrow-interest-accrued?orderId=FIXED_BORROW_example&orderCurrency=USDT&limit=10
+```
+This returns penalty interest records already deducted; querying does not charge interest. Use the returned opaque `nextPageCursor` for subsequent pages.
+
+**Cancel an eligible fixed-rate borrow order**
+
+On Mainnet, present the standard confirmation card for the specified borrow-order `orderId` and wait for human `CONFIRM` before submitting:
+```
+POST /v5/spot-margin-trade/fixedborrow-order-cancel
+{"orderId":"FIXED_BORROW_example"}
+```
+`retCode=0` means the request was accepted, not that the order is already cancelled. Query `fixedborrow-order-info` afterward to confirm its final status. Cancelling an order does not repay an already matched loan.
+
 **Repay with repayment type (fixed-rate liabilities only)**
 ```
 POST /v5/account/repay
@@ -73,11 +88,11 @@ User might say: "Show my referral profile", "List my invited friends", "Check my
 These four authenticated POST endpoints are **read-only queries** and do not require a write-operation confirmation card. The authenticated user comes from gateway context; invitee-ID filters do not change the caller identity.
 
 1. Query `POST /v5/referral/user/identity-profile` with `{}` for the current user's affiliate and inviter relationships and available commission summary.
-2. Query `POST /v5/referral/user/invitations` for invited-friend records. Use this endpoint's **snake_case** fields, for example `{"page":1,"page_size":10,"friend_status":4}` for qualified friends. Preserve the returned masked IDs and honor `not_show_commission` when displaying commission information.
+2. Query `POST /v5/referral/user/invitations` for invited-friend records. Use this endpoint's **camelCase** fields, for example `{"page":1,"pageSize":10,"friendStatus":4}` for qualified friends. Display `userIdMask` rather than the unencrypted `userId`, and honor `notShowCommission` when displaying commission information.
 3. Query `POST /v5/referral/commission/records` for commission history. Use this endpoint's **camelCase** fields, for example `{"page":1,"pageSize":10,"productLine":1}` for spot commissions. Keep monetary values and commission rates as strings; distinguish awaiting-credit records from settled records.
-4. Query `POST /v5/referral/campaign/rewards` with `{}` for current-site rules and configured rewards. Parse each `result.tasks[]` JSON string and require `schema_version=2` before interpreting its tasks. A parsing failure or unknown version means the campaign could not be interpreted, not that it has no tasks. Report these as campaign configurations, not the user's task progress, claimed rewards, payouts, or actual commission tier.
+4. Query `POST /v5/referral/campaign/rewards` with `{}` for current-site rules and configured rewards. Parse each `result.tasks[]` JSON string and require `schemaVersion=2` before interpreting its tasks. The embedded V2 JSON also uses camelCase. A parsing failure or unknown version means the campaign could not be interpreted, not that it has no tasks. Report these as campaign configurations, not the user's task progress, claimed rewards, payouts, or actual commission tier.
 
-For record queries, validate any supplied times as `YYYY-MM-DD HH:mm:ss` before sending them, and use `page` / `page_size` or `pageSize` with `result.total` for pagination. Do not infer a default past-week window. These contracts come from the spec's service/Proto analysis; endpoint deployment and final gateway serialization have not been verified.
+For record queries, validate any supplied times as `YYYY-MM-DD HH:mm:ss` before sending them, and use `page` / `pageSize` with `result.total` for pagination. Do not infer a default past-week window. These contracts come from the spec's service/Proto analysis; endpoint deployment and final gateway serialization have not been verified.
 
 ---
 
@@ -214,6 +229,8 @@ Guide the user to enable the corresponding permission in App settings.
 | Query Fixed-Rate Borrow Market | `/v5/spot-margin-trade/fixedborrow-order-quote` | GET | orderCurrency, orderBy | term, sort, limit | — |
 | Query Fixed-Rate Borrow Orders | `/v5/spot-margin-trade/fixedborrow-order-info` | GET | — | orderId, orderCurrency, state, term, limit, cursor | — |
 | Query Fixed-Rate Borrow Contracts | `/v5/spot-margin-trade/fixedborrow-contract-info` | GET | — | orderId, orderCurrency, term, limit, cursor | — |
+| Query Fixed-Rate Borrow Penalty Interest | `/v5/spot-margin-trade/fixedborrow-interest-accrued` | GET | — | orderId, orderCurrency, limit, cursor | — |
+| Cancel Fixed-Rate Borrow Order | `/v5/spot-margin-trade/fixedborrow-order-cancel` | POST | orderId | — | — |
 | Query Borrow Liability | `/v5/spot-margin-trade/liability` | GET | currency | — | — |
 | Query Fixed-Rate Available Inventory | `/v5/spot-margin-trade/fixed-available-inventory` | GET | currency, term, annualRate | — | — |
 
@@ -240,7 +257,7 @@ Guide the user to enable the corresponding permission in App settings.
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
 |----------|------|--------|----------------|-----------------|------------|
 | Referral User Identity Profile | `/v5/referral/user/identity-profile` | POST | — | — | — |
-| Referral User Invitations | `/v5/referral/user/invitations` | POST | — | user_id_list, start_time, end_time, page, page_size, friend_status | — |
+| Referral User Invitations | `/v5/referral/user/invitations` | POST | — | userIdList, startTime, endTime, page, pageSize, friendStatus | — |
 | Referral Commission Records | `/v5/referral/commission/records` | POST | — | userIdList, startTime, endTime, page, pageSize, productLine | — |
 | Referral Campaign Rewards | `/v5/referral/campaign/rewards` | POST | — | — | — |
 
@@ -374,6 +391,20 @@ Guide the user to enable the corresponding permission in App settings.
 - Queries matched fixed-rate loan contract details including principal, interest, and status.
 - Supports cursor-based pagination. `limit`: 1-100, default `10`.
 
+### Query Fixed-Rate Borrow Penalty Interest (`/v5/spot-margin-trade/fixedborrow-interest-accrued`)
+- Authenticated Unified account; API key read permission required. Read-only query; querying does not charge interest.
+- Without `cursor`, queries the latest 30 days, ordered by creation time descending and then record ID descending. Returns `result.list` and `result.nextPageCursor`; an empty cursor ends pagination. Pass the opaque cursor unchanged, URL-encoded, on the next request.
+- `limit` is a string: `"1"`–`"100"` (default `"10"`). `orderCurrency` filters a single borrow coin.
+- Records contain string `refId`, `currency`, `orderId`, `loanAmt`, `interest`, `interestRate`, and `ts`. `refId` identifies the penalty detail; `orderId` is the borrow order ID, not a contract match ID. `loanAmt` is the outstanding principal used for that penalty period, and `interest` is the actual penalty already deducted by UTA Engine. Preserve amounts/rates as strings; do not infer actual deductions by recalculating from the rate.
+- `interestRate` is the annual contract rate multiplied by the penalty multiplier; no default multiplier is established here. `ts` is a string Unix timestamp in **milliseconds**; top-level `time` is also milliseconds.
+- Rate limit: **5 requests/s per UID + path**. Check `retCode` even on HTTP 200. HTTP errors: `400` invalid request/parameter format, `401` authentication failure, `403` missing read permission/restriction, `404` unavailable endpoint, `429` rate limit. No endpoint-specific numeric business errors are established by this spec.
+
+### Cancel Fixed-Rate Borrow Order (`/v5/spot-margin-trade/fixedborrow-order-cancel`)
+- Authenticated Unified account; API key write permission required. The order must belong to the caller, exist, and be in a cancellable state.
+- Requires a JSON body with non-empty borrow-order `orderId`; do not substitute a contract match ID or renewal `loanId`. This is a write operation: Mainnet requires the standard structured confirmation and human `CONFIRM`.
+- `retCode=0` means the cancellation request was accepted. `result` is `{}` and has no status field. Query `/v5/spot-margin-trade/fixedborrow-order-info` afterward to confirm the final state; do not report cancellation as completed from the acceptance response alone. Cancellation does not repay an already matched loan or reverse previously deducted penalty interest.
+- Rate limit: **1 request/s per UID + path**; wait at least one second between cancellation requests, overriding the generic 300 ms POST interval. HTTP errors: `400` invalid request/parameter format, `401` authentication failure, `403` missing write permission/restriction, `404` unavailable endpoint, `429` rate limit. Check non-zero `retCode` on HTTP 200; do not invent endpoint-specific business codes.
+
 ### Query Borrow Liability (`/v5/spot-margin-trade/liability`)
 - Returns borrow liability breakdown: total, fixed-rate, flexible-rate, spot, and derivatives borrow amounts.
 - `currency` (required): Coin name (e.g. `USDT`). Unified account only.
@@ -419,36 +450,38 @@ Guide the user to enable the corresponding permission in App settings.
 
 ### Referral Queries — Authentication, Limits, and Errors
 - All four `/v5/referral/*` endpoints query the authenticated user's context. Use V5 signed POST headers (`X-BAPI-API-KEY`, `X-BAPI-TIMESTAMP`, `X-BAPI-SIGN`; optional `X-BAPI-RECV-WINDOW`, default `5000` ms) and sign the exact JSON body. Identity Profile and Campaign Rewards accept an empty object and no caller user ID or site selector.
-- The spec derives routes and limits from local service/Proto definitions; dedicated official V5 endpoint pages, live availability, and some final gateway field casing and int64/enum encodings remain unverified. Use the documented request casing; do not invent accepted aliases or coerce large IDs through floating-point numbers.
+- The spec derives routes and limits from local service/Proto definitions. Request and response property names use the Proto's explicit camelCase JSON names, including embedded campaign V2 JSON. Dedicated official V5 endpoint pages, live availability, actual gateway serialization, and int64/enum encodings remain unverified; acceptance of legacy snake_case aliases is unverified. Use the documented casing, do not invent aliases, and do not coerce large IDs through floating-point numbers.
 - Declared rate limits for each endpoint: **5/s per UID + Path**, **100/s per Path**; production enforcement is unverified.
-- Identity Profile, Invitations, and Commission Records report `10005` when user identity is unavailable and `10016` on upstream failure. Inspect transport status, gateway errors, and the business code together; the final HTTP error mapping is not confirmed. In particular, a preset `ret_code=0` / `retCode=0` must not hide a transport or gateway error.
+- Identity Profile, Invitations, and Commission Records report `10005` when user identity is unavailable and `10016` on upstream failure. Inspect transport status, gateway errors, and the business code together; the final HTTP error mapping is not confirmed. In particular, a preset `retCode=0` must not hide a transport or gateway error.
 - Campaign Rewards can fail when identity, required configuration, tasks, site rules, or JSON encoding fails; its error body/status are unverified, so do not invent endpoint-specific numeric errors. A reward-assembly failure skips that task while retaining the campaign and other tasks.
 
 ### Referral User Identity Profile (`/v5/referral/user/identity-profile`)
-- Returns `isAffiliate`, `isM1`, `inviterAffiliateId`, `inviterAffiliateUserId`, `inviterUserId`, and optional `commissionInfo`. If the user is an affiliate, M1 inviter status is not queried; affiliate direct-customer and invited-user relationships are queried independently. Missing relationship records are not system errors, and unmatched relationship IDs remain `0`.
+- Returns `isAffiliate`, `isM1`, `inviterAffiliateId`, `inviterAffiliateUserId`, `inviterUserId`, and optional `commissionInfo`. `inviterAffiliateId` is the affiliate ID; `inviterAffiliateUserId` and `inviterUserId` are currently **0/1 relationship indicators**, not the related users' actual IDs. If the user is an affiliate, M1 inviter status is not queried; affiliate direct-customer and invited-user relationships are queried independently. Missing relationship records are not system errors; absent relationships have value `0`.
 - `commissionInfo` is populated only when an M1 inviter record matches the authenticated user and the commission query succeeds. It can contain string amounts/rates (`totalCommission`, `yesterdayCommission`, `walletBalance`, `qualifiedFriendsQuarterTotalTradeVolume`, `commissionRate`), friend counts (`totalFriends`, `qualifiedFriends`, `curQuarterActiveFriendsCount`, `lastQuarterQualifiedFriendsCount`), and status fields.
 - `degradeType`: `0` unknown/not downgraded, `1` active-invitee-count downgrade, `2` invitee-trading-volume downgrade. `upgradeUnifiedAccount`: `0` unknown, `1` upgraded, `2` upgrading, `3` not upgraded. `withdrawalSwitch`: `1` enabled, `2` disabled; `0` can be an unset default. `hasOldReferral` has no verified enum restriction.
-- Some shared response fields are not explicitly populated by the current helper: `curQuarterActiveFriendsCount` is set only when degradation information is obtained during a warning period; `withdrawalSwitch` and `lastQuarterQualifiedFriendsCount` may remain `0`. Do not treat missing/default data as a confirmed account setting.
+- The dedicated `commissionInfo` conversion copies all 13 fields from the source commission result. `withdrawalSwitch` and `lastQuarterQualifiedFriendsCount` can still be `0` when their source values are `0`; they are not omitted by this conversion. `curQuarterActiveFriendsCount` is populated at the source only when degradation information is obtained during a warning period. Do not treat missing/default data as a confirmed account setting.
 
 ### Referral User Invitations (`/v5/referral/user/invitations`)
-- All body fields are optional. `user_id_list` defaults to `[]` (no invitee-ID filter). `page` defaults to `1` and `0` becomes `1`; `page_size` defaults to `10`, with `0` or values greater than `200` reset to `10`. Both pagination fields are unsigned 32-bit integers (`0`–`4294967295`); prefer page sizes `1`–`200`.
-- `start_time` / `end_time` use `YYYY-MM-DD HH:mm:ss`; invalid or empty values become downstream `0`. The final search window cannot be inferred from this API layer alone.
-- `friend_status` / response `user_status`: `0` FRIEND_STATUS_UNKNOWN, `1` SIGN_UP, `2` HAS_FTD, `3` HAS_FTT, `4` QUALIFIED, `5` NOT_QUALIFIED, `6` HistoryInvitation, `7` BoostInProgress, `8` BoostQUALIFIED, `9` BoostFailed, `10` BoostSIGNUP.
-- The documented response uses `ret_code`, `ret_msg`, and `result.records` / `result.total`. Records contain `user_id_mask`, `sign_time`, `user_status`, `total_commission`, `user_id`, `task_progress`, `not_show_commission`, and `total_base_rewards`. Final gateway casing and int64/enum encoding are unverified; the `user_id` display/encryption policy is unresolved in the spec. Do not assume a timestamp unit for `sign_time` that the contract does not establish.
+- All body fields are optional. `userIdList` defaults to `[]` (no invitee-ID filter). `page` defaults to `1` and `0` becomes `1`; `pageSize` defaults to `10`, with `0` or values greater than `200` reset to `10`. Both pagination fields are unsigned 32-bit integers (`0`–`4294967295`); prefer page sizes `1`–`200`.
+- `startTime` / `endTime` use `YYYY-MM-DD HH:mm:ss`; invalid or empty values become downstream `0`. The final search window cannot be inferred from this API layer alone.
+- `friendStatus` / response `userStatus`: `0` FRIEND_STATUS_UNKNOWN, `1` SIGN_UP, `2` HAS_FTD, `3` HAS_FTT, `4` QUALIFIED, `5` NOT_QUALIFIED, `6` HistoryInvitation, `7` BoostInProgress, `8` BoostQUALIFIED, `9` BoostFailed, `10` BoostSIGNUP.
+- The documented response uses `retCode`, `retMsg`, and `result.records` / `result.total`. Records contain `userIdMask`, `signTime`, `userStatus`, `totalCommission`, `userId`, `taskProgress`, `notShowCommission`, and `totalBaseRewards`. `totalCommission` is formatted to at most eight decimal places; invalid source amounts cause an error, not a zero balance. Actual gateway serialization and int64/enum encoding remain unverified; do not assume an undocumented timestamp unit for `signTime`.
+- `userId` is currently an unencrypted decimal invitee UID, with `userIdMask` supplied separately. Its public display policy remains unconfirmed: default to displaying only `userIdMask`, omit the ID if a masked value is unavailable, and do not output the raw `userId` in conversation, logs, or exports.
+- `notShowCommission=true` applies to some new EU-site invitees and non-Boost JPN-site invitees; the Boost branch retains the default `false`. Honor this flag; if it is absent or not a boolean, hide the associated commission information rather than guessing the policy. `totalBaseRewards` is not populated by this endpoint and remains an empty string; its gateway JSON presence is unverified, so do not report it as actual earned rewards.
 
 ### Referral Commission Records (`/v5/referral/commission/records`)
 - A JSON request body is required, but every property is optional; `{}` is valid for default filters. An empty `userIdList` applies no invitee filter. `page` defaults to `1` (`0` becomes `1`); `pageSize` defaults to `10`, with `0` or values greater than `200` reset to `10`. Prefer `1`–`200` records per page.
-- `startTime` / `endTime` use `YYYY-MM-DD HH:mm:ss`; an invalid value becomes an empty downstream filter. There is no implemented default past-week range or start-before-end validation; validate user-supplied dates locally before querying.
+- `startTime` / `endTime` use `YYYY-MM-DD HH:mm:ss`; an invalid value is passed downstream as an empty string, whose interpretation is unverified. There is no implemented default past-week range or start-before-end validation; validate user-supplied dates locally before querying.
 - `productLine` / response `businessUnit`: `0` unknown, `1` spot, `2` contracts, `3` options, `4` USDC perpetual, `6` TradeFi, `9` Alpha. The request value is forwarded unchanged; unrecognized downstream product lines map to response `0`.
 - Returns `result.records` and `result.total`. Each record has masked invitee `userId`, `paymentTime` in **Unix seconds**, string `rate`, `businessUnit`, `commissionOriginCoin`, string `commissionOriginAmount` / `commissionUsdtAmount`, and `commissionStatus`: `0` unknown, `1` awaiting credit, `2` settled. Unrecognized downstream statuses map to `0`.
 - `isBoostM2` is defined in the Proto but is not explicitly populated by the current logic; its JSON presence depends on gateway serialization. Do not infer Boost status from a missing/default value.
 
 ### Referral Campaign Rewards (`/v5/referral/campaign/rewards`)
-- No parameters. Returns independent current-site `rebateRule` configuration and `tasks`, ordered by active `base`, `fiat`, then `earn` campaigns. Each `tasks[]` item is a **JSON string** containing `schema_version=2`, `source` (`base|fiat|earn`), `campaign_id`, and `tasks`; `campaign_id` is a configuration ID, not a personal reward record.
-- Each decoded task has `id`, numeric `award_type`, `rule_title`, `rule_description`, `rule_param`, `task_awards`, and `m1_awards`. The three rule arrays correspond element by element for valid English rules, can contain empty strings, and are `null` when there are no valid rules. Configured tasks and found one-hop M1/M2 related tasks appear as separate task entries, without an origin flag. A campaign may retain an empty tasks array after missing details or assembly failures.
-- `award_type`: `0` UNKNOWN, `1` CASH_CARD, `2` SERVICE_CASH_CARD, `3` TRADING_FEE_DISCOUNT_CARD, `4` TASK, `5` BYFI_INTEREST, `6` SPOT_AIR_DROP, `7` VIP_EXPERIENCE_CARD, `8` VOTES_CARD, `9` TRADING_VOUCHER, `10` REWARD, `11` NFT_AIR_DROP, `12` LOSS_COVER_VOUCHER, `13` POSITION_AIR_DROP, `14` APR_BOOSTER, `15` NFT_FREE_MINT_CARD, `16` AWARD_TYPE_COUPON_CODE, `17` CREDIT, `18` CARD_SKIN, `19` CASH_VOUCHER, `95` BENEFIT_PKG, `96` EMPTY_PACK, `97` POINTS, `98` TRIGGER, `99` OTHERS, `100` REWARD_PACKET. Details are not currently assembled for `95` or `97`; `100` uses reward packets, and other values use regular rewards when the reward ID is positive.
-- Award entries contain `id`, `name`, `type`, `product_line`, `start_time`, and `end_time`. Reward packets use `type=Packet`, names such as `UP TO <value_usd>` / `EARN <value_usd>`, empty `product_line` / `start_time`, and any available packet end time. Regular rewards use English display fields. Available times are UTC RFC3339; missing times are empty strings. `task_awards` / `m1_awards` default to `[]`; M1 rewards include only successfully parsed referral reward configurations.
-- `rebateRule` contains `deposit_amount`, `trade_amount`, `rebate_ratio_rules`, and `rebate_duration_days`. Each tier rule has `rebate_ratio` (`0`–`100`), `referral_count`, `has_trade_condition`, and `trade_amount_condition`. Threshold currency and precision are unverified. `tradefi_deposit_amount` / `tradefi_trade_amount` are not set by the current builder; default `0` is not a confirmed threshold. Rules may be returned without a campaign and do not establish the user's matching tier.
+- No parameters. Returns independent current-site `rebateRule` configuration and `tasks`, ordered by active `base`, `fiat`, then `earn` campaigns. The response envelope, `rebateRule`, and embedded JSON use camelCase. Each `tasks[]` item is a **JSON string** containing `schemaVersion=2`, `source` (`base|fiat|earn`), `campaignId`, and `tasks`; `campaignId` is a configuration ID, not a personal reward record.
+- Each decoded task has `id`, numeric `awardType`, `ruleTitle`, `ruleDescription`, `ruleParam`, `taskAwards`, and `m1Awards`. The three rule arrays correspond element by element for valid English rules, can contain empty strings, and are `null` when there are no valid rules. Configured tasks and found one-hop M1/M2 related tasks appear as separate task entries, without an origin flag. A campaign may retain an empty tasks array after missing details or assembly failures.
+- `awardType`: `0` UNKNOWN, `1` CASH_CARD, `2` SERVICE_CASH_CARD, `3` TRADING_FEE_DISCOUNT_CARD, `4` TASK, `5` BYFI_INTEREST, `6` SPOT_AIR_DROP, `7` VIP_EXPERIENCE_CARD, `8` VOTES_CARD, `9` TRADING_VOUCHER, `10` REWARD, `11` NFT_AIR_DROP, `12` LOSS_COVER_VOUCHER, `13` POSITION_AIR_DROP, `14` APR_BOOSTER, `15` NFT_FREE_MINT_CARD, `16` AWARD_TYPE_COUPON_CODE, `17` CREDIT, `18` CARD_SKIN, `19` CASH_VOUCHER, `95` BENEFIT_PKG, `96` EMPTY_PACK, `97` POINTS, `98` TRIGGER, `99` OTHERS, `100` REWARD_PACKET. Details are not currently assembled for `95` or `97`; `100` uses reward packets, and other values use regular rewards when the reward ID is positive.
+- Award entries contain `id`, `name`, `type`, `productLine`, `startTime`, and `endTime`. Reward packets use `type=Packet`, names such as `UP TO <value_usd>` / `EARN <value_usd>`, empty `productLine` / `startTime`, and any available packet end time. Regular rewards use English display fields. Available times are UTC RFC3339; missing times are empty strings. `taskAwards` / `m1Awards` default to `[]`; M1 rewards include only successfully parsed referral reward configurations.
+- `rebateRule` contains `depositAmount`, `tradeAmount`, `rebateRatioRules`, and `rebateDurationDays`. Each tier rule has `rebateRatio` (`0`–`100`), `referralCount`, `hasTradeCondition`, and `tradeAmountCondition`. Threshold currency and precision are unverified. `tradefiDepositAmount` / `tradefiTradeAmount` are not set by the current builder; default `0` is not a confirmed threshold. Rules may be returned without a campaign and do not establish the user's matching tier.
 - This endpoint does not return personal task progress, reward claims, or payouts; legacy `records`, `siteDetail`, and legacy task fields are not part of this structure. A configured award or numeric award type does not establish that a reward has been earned or claimed.
 
 ### Set Margin Mode (`/v5/account/set-margin-mode`)
