@@ -1,0 +1,27 @@
+.claude-plugin/plugin.json
+  s_f454d423bf6842::t_2c9b773c52273e 5
+README.md
+  s_f454d423bf6842::t_7ad82bd0eef720 5
+SKILL.md
+  s_f454d423bf6842::t_140cd1779d57f2 5,7,30,40,274,278,370,428,450
+VERSION
+  s_f454d423bf6842::t_0f8ad2c7e455d9 1
+modules/account.md
+  s_f454d423bf6842::t_f5aa892831561f 491,493-496
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "dd65ff74d4dacaac3fe4279e3b2df21752f280ed",
+  "prompts": {},
+  "sessions": {
+    "s_f454d423bf6842": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a18ba8-66d7-70e3-9f79-9f1dbf0c3116",
+        "model": "unknown"
+      },
+      "human_author": "paul.yang <paul.yang@bybit.com>"
+    }
+  }
+}
