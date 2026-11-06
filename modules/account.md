@@ -488,8 +488,12 @@ Guide the user to enable the corresponding permission in App settings.
 - Error code `3200425`: Cannot switch to Portfolio Margin (PM) mode while holding an Event Futures position. Close the position before switching.
 
 ### API Key Permissions
-- 14 permission categories: ContractTrade, Spot, Wallet, Options, Derivatives, CopyTrading, BlockTrade, Exchange, NFT, Affiliate, Earn, FiatP2P, FiatBitPay, FiatConvertBroker.
+- 15 permission categories: ContractTrade, Spot, Wallet, Options, Derivatives, CopyTrading, BlockTrade, Exchange, NFT, Affiliate, Earn, FiatP2P, FiatBitPay, FiatConvertBroker, Compliance.
 - Read-Write API keys cannot add or delete FiatP2P, FiatBitPay, and FiatConvertBroker permissions.
+- `permissions.Compliance` is an array whose only supported value is `ComplianceAppeal`, for querying TM Onchain appeal status and submitting related materials. API key queries return `["ComplianceAppeal"]` when granted and `[]` when not granted; permission-update responses also return `[]` after revocation.
+- `ComplianceAppeal` is available only to main-site master accounts with read-write API keys (`readOnly=0`). Sub-accounts, other sites, OAuth keys, and TaxAPI keys are not supported. It is not granted by default, and existing keys do not receive it automatically.
+- `permissions.Compliance` is optional when updating permissions. Set it to `["ComplianceAppeal"]` to grant or `[]` to revoke. When updating other permission categories, include its existing value to retain this permission.
+- A read-only key cannot contain `ComplianceAppeal`; clear this category when switching to `readOnly=1`. Permission changes are write operations and follow the Skill's Mainnet confirmation rules.
 
 ## Enums
 
