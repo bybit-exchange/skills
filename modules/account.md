@@ -66,6 +66,29 @@ POST /v5/account/repay
 
 ---
 
+## Scenario: Trade Auto Repay
+
+User might say: "Check my trade auto repayment setting", "Enable repayment after spot trades", "Turn off trade auto repay".
+
+**Query the saved switch (read-only)**
+```
+GET /v5/spot-margin-trade/get-trade-auto-repay
+```
+`result.autoRepay` is a string: `"0"` disabled, `"1"` enabled. This reports the saved setting, not a repayment transaction or a guarantee that a particular trade will repay debt.
+
+**Enable or disable the switch**
+
+On Mainnet, first present the standard structured confirmation card with the requested switch state and explain that an eligible spot trade's credited coin may repay its own flexible-rate liability without conversion. Wait for human `CONFIRM` before sending the write:
+```
+POST /v5/spot-margin-trade/set-trade-auto-repay
+{"autoRepay":"1"}
+```
+Use `{"autoRepay":"0"}` to disable; both changes follow the write-operation confirmation rules. Check `retCode` and the returned saved `result.autoRepay`, and query the switch again if the result is missing or does not match the request. Do not report a debt repayment from the switch response.
+
+Trade auto repayment runs only in **Cross** and **Portfolio** margin modes. An **Isolated** account can save the switch, but it has no effect while the account remains in Isolated mode. This is separate from scheduled auto repayment (`get-auto-repay-mode` / `set-auto-repay-mode`); do not substitute those settings or change the user's margin mode to make this switch effective.
+
+---
+
 ## Scenario: Export Batch Tax Reports
 
 User might say: "Export my trading and earn tax reports", "Download all my tax reports for the last year", "Check my tax report batch".
@@ -220,6 +243,13 @@ Guide the user to enable the corresponding permission in App settings.
 | Portfolio Margin | `/v5/asset/portfolio-margin` | GET | — | baseCoin | — |
 | Total Members Assets | `/v5/asset/total-members-assets` | GET | — | coin | — |
 
+### Spot Margin Trade — Trade Auto Repay (authentication required, Unified account only)
+
+| Endpoint | Path | Method | Required Params | Optional Params | Categories |
+|----------|------|--------|----------------|-----------------|------------|
+| Get Trade Auto Repay | `/v5/spot-margin-trade/get-trade-auto-repay` | GET | — | — | — |
+| Set Trade Auto Repay | `/v5/spot-margin-trade/set-trade-auto-repay` | POST | autoRepay | — | — |
+
 ### Spot Margin Trade — Fixed-Rate Borrow (authentication required, Unified account only)
 
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
@@ -348,6 +378,19 @@ Guide the user to enable the corresponding permission in App settings.
 - Returns aggregated total assets overview for parent and sub accounts.
 - If `coin` is specified, total assets are denominated in that coin.
 - Supports parent-sub account query; if `parentUid` exists, uses the parent account UID.
+
+### Get Trade Auto Repay (`/v5/spot-margin-trade/get-trade-auto-repay`)
+- Authenticated Unified account; API key read permission required. No parameters; read-only query.
+- Returns the saved `result.autoRepay` string: `"0"` disabled, `"1"` enabled. It does not report whether an individual trade triggered repayment. A saved enabled switch has no effect in Isolated mode; trade auto repayment runs only in Cross and Portfolio modes.
+- Separate from the scheduled auto repayment settings returned by `get-auto-repay-mode`. Rate limit: **50 requests/s per UID + path**.
+- Check `retCode` even on HTTP 200. HTTP errors: `400` invalid request/parameter format, `401` authentication failure, `403` missing read permission/restriction, `404` unavailable endpoint, `429` rate limit.
+
+### Set Trade Auto Repay (`/v5/spot-margin-trade/set-trade-auto-repay`)
+- Authenticated Unified account; API key write permission required. Requires a JSON body with string `autoRepay`: `"0"` disable | `"1"` enable; do not send a number or boolean. The setting is disabled by default; this does not make the request field optional. Mainnet requires the standard structured confirmation and human `CONFIRM` for either change.
+- When enabled, a coin credited by an eligible spot trade can repay its own flexible-rate liability without asset conversion. The actual amount depends on the trade credit, available balance, and outstanding liability; saving the switch is not evidence of a repayment.
+- Runs only in Cross and Portfolio margin modes. Isolated accounts can save the setting, but no trade auto repayment runs while in Isolated mode. This setting is separate from scheduled auto repayment configured through `set-auto-repay-mode`.
+- Returns the saved `result.autoRepay` string, not a repaid amount. Top-level `time` is a Unix timestamp in milliseconds. Rate limit: **5 requests/s per UID + path**; the Skill's global POST interval still applies.
+- Check `retCode` even on HTTP 200; `34022101` means invalid `autoRepay`. HTTP errors: `400` invalid request/parameter format, `401` authentication failure, `403` missing write permission/restriction, `404` unavailable endpoint, `429` rate limit.
 
 ### Manual Repay (`/v5/account/repay`)
 - New optional parameter `repaymentType`: `ALL` | `FIXED` | `FLEXIBLE` (default `FLEXIBLE`).
