@@ -2,9 +2,9 @@
 name: bybit-trading
 description: Bybit AI Trading Skill — Trade on Bybit using natural language. Covers spot, derivatives, earn, and more. Works with Claude, ChatGPT, OpenClaw, and any AI assistant.
 metadata:
-  version: 1.7.12  # Modular Architecture + Security Baseline
+  version: 1.7.13  # Modular Architecture + Security Baseline
   author: Bybit
-  updated: 2026-11-10
+  updated: 2026-11-20
 license: MIT
 ---
 
@@ -27,7 +27,7 @@ FOREGROUND (main agent — immediate):
 BACKGROUND (sub-agent — parallel):
 1. LOCAL_VERSION = metadata.version  (from YAML frontmatter above)
 2. SKILL_DIR = directory where this SKILL.md is located
-3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.12" https://api.bybit.com/skill/manifest
+3. MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.13" https://api.bybit.com/skill/manifest
    (returns JSON: {"version":"x.y.z", "files":{"SKILL.md":"sha256:...","modules/market.md":"sha256:...",...}})
 4. If fetch fails: return {status: "error", reason: "fetch_failed"}
 5. Path validation: For each file in manifest.files, reject the entire update if ANY path:
@@ -37,7 +37,7 @@ BACKGROUND (sub-agent — parallel):
 6. Version comparison (semver): split by ".", compare major → minor → patch numerically.
    If manifest.version > LOCAL_VERSION:
    a. For each file in manifest.files:
-      - Download: curl -sf -H "User-Agent: bybit-skill/1.7.12" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
+      - Download: curl -sf -H "User-Agent: bybit-skill/1.7.13" https://raw.githubusercontent.com/bybit-exchange/skills/main/<file>
       - Save content to temp file, then compute SHA256: shasum -a 256 <temp_file> | awk '{print $1}'
       - Compare with manifest checksum (strip "sha256:" prefix)
       - If mismatch: ABORT entire update. return {status: "error", reason: "checksum_mismatch", file: "<file>"}
@@ -85,10 +85,12 @@ Bybit's official AI-trading account type ([help article](https://www.bybit.com/e
 
 Use this only if AI Subaccount isn't available in your region or you need a non-AI key flow.
 
-1. Log in to [Bybit](https://www.bybit.com) → API Management → Create New Key (do this from inside a **Standard sub-account** if possible — never from the main account).
+1. Log in to [Bybit](https://www.bybit.com) → API Management → Create New Key (do this from inside a **Standard sub-account** if possible — never use a main-account key for trading).
 2. Permissions: enable **Read + Trade only** (NEVER enable Withdraw for AI use).
 3. Bind your IP address (makes the key permanent; otherwise expires in 3 months).
 4. Fund the (sub-)account with only the amount you're willing to risk in one bad day.
+
+**Read-only institutional query exception:** `GET /v5/ins/connection-limit` requires a main-account API Key. Use separately configured main-account credentials for this query only; prefer read-only permissions and local signing. Keep the session's subaccount trading credentials and OAuth account unchanged. If no separate main-account key is configured, stop this query and guide the user to configure it locally; do not ask them to paste a main-account secret into chat or use that key for trading.
 
 ### Step 2: Configure Credentials
 
@@ -271,11 +273,11 @@ Tell the user what they can do. Examples:
 2. If the module has NOT been loaded in this session:
    a. Ensure manifest is available:
       - If cached from Auto Update: reuse it
-      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.12" https://api.bybit.com/skill/manifest
+      - Otherwise: MANIFEST = curl -sf -H "User-Agent: bybit-skill/1.7.13" https://api.bybit.com/skill/manifest
       - If fetch fails: use current local version of the module (SKILL_DIR/modules/<module>.md)
         If no local version exists: inform user module unavailable, only GET operations permitted
       - Cache manifest in session
-   b. Download: curl -sf -H "User-Agent: bybit-skill/1.7.12" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
+   b. Download: curl -sf -H "User-Agent: bybit-skill/1.7.13" https://raw.githubusercontent.com/bybit-exchange/skills/main/modules/<module>.md
       - If download fails: use current local version of the module
         If no local version exists: inform user module unavailable, only GET operations permitted
    c. Verify integrity:
@@ -291,7 +293,7 @@ Tell the user what they can do. Examples:
 
 | User Intent Keywords | Module | File | Requires |
 |---------------------|--------|------|----------|
-| price, ticker, kline, chart, orderbook, depth, funding rate, open interest, market data | **market** | `modules/market.md` | — |
+| price, ticker, kline, chart, orderbook, depth, funding rate, open interest, market data, institutional connection limits, institution domains, institutional WebSocket connections, Spot SBE connection count | **market** | `modules/market.md` | — |
 | buy, sell, spot, swap, exchange, convert, limit order, market order, cancel order, spot margin | **spot** | `modules/spot.md` | account |
 | long, short, leverage, futures, perpetual, close position, take profit, stop loss, trailing stop, conditional order, hedge mode, option, put, call, strike, expiry | **derivatives** | `modules/derivatives.md` | account |
 | earn, stake, redeem, yield, savings, flexible, flexible auto savings, auto savings, auto-savings, fixed deposit, fixed term, fund pool, dual assets, structured product, discount buy, smart leverage, double win, liquidity mining, auto reinvest, early redeem, hold-to-earn, airdrop yield, PWM, private wealth, investment plan, fund management, asset manager | **earn** | `modules/earn.md` | account |
@@ -304,11 +306,13 @@ Tell the user what they can do. Examples:
 | TWAP, iceberg, chase order, chaseOrder, strategy order, split order, algorithmic, POV, percentage of volume, volume participation | **strategy** | `modules/strategy.md` | account |
 | xStocks, tokenized stock, commodity perpetual, XAUUSDT, XAGUSDT, CLUSDT, crude oil, buy/sell TradFi, metals agreement, oil agreement | **tradfi** | `modules/tradfi.md` | account, spot, derivatives |
 | card, bybit card, card transaction, card spending, card payment, card history | **card** | `modules/card.md` | account |
-| Launchpool, launch pool, launchpad, new token mining, puzzle, token splash, Spot-X, spotx, campaign, activity list, activity reward, staking activity, project list | **activity** | `modules/activity.md` | — |
+| Launchpool, launch pool, launchpad, new token mining, puzzle, puzzle rules, puzzle project detail, token splash, Spot-X, spotx, campaign, activity list, activity reward, staking activity, project list | **activity** | `modules/activity.md` | — |
 | authorize, OAuth, connect Bybit, login Bybit, 授权, 登录, one-click auth, enable Bybit trade execution, Authorize via OAuth | **oauth** | `modules/oauth.md` | — |
 
 **Module-specific notes:**
 
+- **Institutional connection limits**: Institution domain limits and domain-wide JSON/SBE connection counts route to `market`, including requests mentioning WebSocket or SBE. `GET /v5/ins/connection-limit` requires a signed main-account API Key and takes no business parameters; it is read-only. Keep protocol capacity separate, and do not treat fallback `current=0` as proof of zero live connections or available capacity. General WebSocket setup still routes to `advanced`.
+- **Puzzle rules**: Puzzle activity detail and task rules route to `activity`. The public `GET /v5/spot-x/puzzle/project/detail` takes required `projectCode`, not the list filter `projectId`; authentication is optional. Rules, display permission, and registration-time flags do not establish participation eligibility, personal task progress, or claimable rewards.
 - **Referral**: Referral identity, invited friends, referral commissions, and referral campaign rewards route to `account`. The four `/v5/referral/*` POST endpoints are authenticated read-only queries. Referral campaign rewards describe static configuration, not personal task progress, claims, or payouts. Use the documented camelCase request and response names, including the embedded campaign V2 JSON; acceptance of legacy snake_case aliases and actual gateway serialization remain unverified. Spot-X / Launchpool / Token Splash activities still route to `activity`.
 - **Trade auto repay**: Querying or changing repayment after eligible spot trades routes to `account`. The switch uses string `autoRepay` (`"0"` disabled, `"1"` enabled) and is separate from scheduled auto repayment. Saving the switch does not prove debt was repaid; it runs only in Cross and Portfolio margin modes, with no effect in Isolated mode. Enabling or disabling it is a write operation requiring Mainnet confirmation.
 - **Fixed-rate borrow**: Penalty interest queries and borrow-order cancellation route to `account`. Penalty queries are read-only and report prior deductions; they do not charge interest. Borrow-order cancellation is a write operation requiring Mainnet confirmation, uses the borrow-order `orderId`, and does not repay a matched loan. Request acceptance must be followed by an order-status query before reporting completion.
@@ -326,7 +330,7 @@ Tell the user what they can do. Examples:
 ### Routing Notes
 
 - Keywords are **hints, not strict rules** — always use semantic understanding of the user's full request to determine the correct module(s). When ambiguous (e.g., "borrow" could mean spot margin or advanced lending), prefer the module matching the broader conversation context, or ask the user to clarify.
-- Common Chinese synonyms: 查价/看价 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富/自动储蓄/灵活储蓄自动储蓄 → earn, 余额/转账/充值/提币/固定借款罚息/取消固定借款订单/交易自动还款/现货交易后自动还款/邀请身份/邀请记录/受邀好友/邀请返佣/返佣记录/邀请活动奖励/税务报表/批量税务导出/税务报表进度 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐/组合机器人/调仓机器人/股票组合/大宗商品组合/传统金融机器人 → trading-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 买入代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 打新/新币挖矿/launchpool/拼图/代币空投/活动列表/质押活动 → activity, 授权/登录/连接Bybit/OAuth → oauth
+- Common Chinese synonyms: 查价/看价/机构连接上限/机构域名/机构WebSocket连接数/SBE连接数 → market, 买/卖/现货 → spot, 开多/开空/合约/杠杆 → derivatives, 理财/质押/双币/持币生息/私人财富/自动储蓄/灵活储蓄自动储蓄 → earn, 余额/转账/充值/提币/固定借款罚息/取消固定借款订单/交易自动还款/现货交易后自动还款/邀请身份/邀请记录/受邀好友/邀请返佣/返佣记录/邀请活动奖励/税务报表/批量税务导出/税务报表进度 → account, 跟单 → copy-trading, 网格/DCA/AI推荐/一键创建/策略推荐/组合机器人/调仓机器人/股票组合/大宗商品组合/传统金融机器人 → trading-bot, 链上/meme/DEX/代币/预测/押注/预测市场/世界杯/FIFA → alpha-trade, 买入代币化股票/特斯拉/苹果/英伟达/黄金/白银/原油/商品永续 → tradfi, 拆单/算法单/POV → strategy, 银行卡/消费记录/刷卡 → card, 打新/新币挖矿/launchpool/拼图/拼图规则/拼图活动详情/代币空投/活动列表/质押活动 → activity, 授权/登录/连接Bybit/OAuth → oauth
 
 ### Loading Rules
 
@@ -368,7 +372,7 @@ All failure scenarios (auto-update, module loading, manifest fetch) follow this 
 | `X-BAPI-RECV-WINDOW` | `5000` |
 | `X-BAPI-SIGN-TYPE` | `2` for RSA-SHA256; omit or set `1` for HMAC-SHA256 |
 | `Content-Type` | `application/json` (POST) |
-| `User-Agent` | `bybit-skill/1.7.12` |
+| `User-Agent` | `bybit-skill/1.7.13` |
 | `X-Referer` | `bybit-skill` |
 
 ### Signing Algorithm
@@ -426,7 +430,7 @@ curl -s "${BASE_URL}/v5/position/list?${QUERY}" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.7.12" \
+  -H "User-Agent: bybit-skill/1.7.13" \
   -H "X-Referer: bybit-skill"
 ```
 
@@ -448,7 +452,7 @@ curl -s -X POST "${BASE_URL}/v5/order/create" \
   -H "X-BAPI-TIMESTAMP: ${TIMESTAMP}" \
   -H "X-BAPI-SIGN: ${SIGN}" \
   -H "X-BAPI-RECV-WINDOW: ${RECV_WINDOW}" \
-  -H "User-Agent: bybit-skill/1.7.12" \
+  -H "User-Agent: bybit-skill/1.7.13" \
   -H "X-Referer: bybit-skill" \
   -d "${BODY}"
 ```
