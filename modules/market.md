@@ -1,6 +1,6 @@
 # Module: Market Data
 
-> This module is loaded on-demand by the Bybit Trading Skill. No authentication required for these endpoints.
+> This module is loaded on-demand by the Bybit Trading Skill. Public market-data endpoints require no authentication; the institutional connection-limit query requires a signed main-account API Key.
 
 ## Scenario: Check Market Data
 
@@ -39,6 +39,18 @@ Use the returned base coins instead of a hard-coded list. Check `hasSymbol=1` be
 
 ---
 
+## Scenario: Check Institutional Connection Limits
+
+User might say: "Show our institutional WebSocket connection limits", "How many Spot SBE connections are in use?"
+
+Use a signed **main-account API Key** and the V5 GET signing flow with an empty query string:
+```
+GET /v5/ins/connection-limit
+```
+Select separately configured, locally stored main-account credentials for this query only; keep the session's subaccount trading credentials and OAuth account unchanged. If only subaccount credentials are available, stop this query and guide the user to configure a separate main-account key locally, without requesting its secret in chat. Do not send `uid`, `ins_id`, any other business query parameter, or a request body. Check `retCode` before reading the result. Report each domain's Spot JSON, Spot SBE, Derivatives JSON, and Derivatives SBE counts separately, using the interpretation below. This read-only query needs no prerequisite write operation.
+
+---
+
 ## API Reference
 
 | Endpoint | Path | Method | Required Params | Optional Params | Categories |
@@ -68,8 +80,21 @@ Use the returned base coins instead of a hard-coded list. Check `hasSymbol=1` be
 | Server Time | `/v5/market/time` | GET | — | — | — |
 | System Status | `/v5/system/status` | GET | — | id, state | — |
 | Announcements | `/v5/announcements/index` | GET | — | locale, type, tag, page, limit | — |
+| Institutional Connection Limits | `/v5/ins/connection-limit` | GET | — | — | — |
 
 ## Endpoint Notes
+
+### Institutional Connection Limits (`/v5/ins/connection-limit`)
+
+- Authentication is required: use a signed main-account API Key; subaccounts are rejected with `10005`. The account identity comes from authentication, not a caller-supplied `uid` or `ins_id`.
+- On `retCode=0`, `result` is a nonempty **array**, with no `result.list` wrapper. Each item contains `host` (institution/customer name), `endpointDomain` (domain without scheme or path), `spot.json`, `spot.sbe`, `derivative.json`, and `derivative.sbe`. Each protocol has non-negative integer `max` and `current`; products have no aggregate `max/current` or `protocols` wrapper.
+- JSON and SBE capacity is independent: do not sum limits/counts or borrow unused capacity across protocols. Each derivatives protocol includes both linear and inverse connections. Counts cover the entire domain, not only the requesting API Key or UID, and count connections rather than subscription topics.
+- Source defaults are `1500` per Spot protocol and `3000` per derivatives protocol. Valid domain-specific limits override defaults, including a valid `max=0`; unavailable limit configuration falls back to source defaults. `current` can exceed `max` and is not clipped.
+- Missing, stale, invalid, or unavailable monitoring data returns integer `current=0`, never null or omitted. This fallback does **not** prove there are no live connections; `current=0` does not guarantee a new connection will be accepted.
+- Domains are cached for 5 minutes. Tokyo (`TYO`) metrics refresh approximately every 60 seconds, with a maximum snapshot age of 120 seconds; backends refresh independently. The envelope's `time` is server response time, not metrics collection time. Tokyo collection failures do not fall back to other regions.
+- The domain list currently includes GW, WS, and WS-Primary service types. A returned GW/API gateway domain does not establish WebSocket path support. The query does not open/close connections or modify limits, whitelists, or account state.
+- Request limit: **1/s per UID + path, burst=1**. `X-Bapi-Limit`, `X-Bapi-Limit-Status`, and `X-Bapi-Limit-Reset-Timestamp` describe request allowance, not connection capacity; a successful request may have remaining allowance `0`. `Traceid` supports request correlation.
+- HTTP 200 does not imply success. Non-zero business responses have `result={}`: `180001` means no eligible institution domains (not distinguishable from a missing institution), `10005` means main-account/permission failure, and `10016` means dependency lookup/data unavailable. Interpret `180001` in this endpoint's context; Alpha Prediction uses the same number for a different error. Standard V5 errors: `10002` timestamp/window, `10003` API Key, `10004` signature, `10006` request rate limit. HTTP `403` is gateway access denial; HTTP `429` is a gateway system rate limit. Reduce request frequency before retrying rate limits.
 
 ### Instruments Info (`/v5/market/instruments-info`)
 
