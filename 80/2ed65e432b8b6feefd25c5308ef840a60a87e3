@@ -1,0 +1,29 @@
+.claude-plugin/plugin.json
+  s_f4ae37ddb2008c::t_cc7a3ca9d77c6a 5
+README.md
+  s_f4ae37ddb2008c::t_471ebf4cf40c82 5
+SKILL.md
+  s_f4ae37ddb2008c::t_cd7d35f18660b5 5,7,30,40,274,278,294,307,312-313,331,373,431,453
+VERSION
+  s_f4ae37ddb2008c::t_96c5b08ede71c2 1
+modules/activity.md
+  s_f4ae37ddb2008c::t_cb8dceed3b25d3 5,23,36,46-60,79-88
+modules/market.md
+  s_f4ae37ddb2008c::t_3c0765c063653a 3,42-53,83,87-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.2-bit.2+419f699",
+  "base_commit_sha": "802ed65e432b8b6feefd25c5308ef840a60a87e3",
+  "prompts": {},
+  "sessions": {
+    "s_f4ae37ddb2008c": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f7c1-7520-7b01-a317-798fb9bf30af",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "paul.yang <paul.yang@bybit.com>"
+    }
+  }
+}
